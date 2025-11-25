@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # IdeaForge
 
 A small Git-inspired creative support tool for ideation, branching, and synthesis. This scaffold implements:
@@ -48,3 +49,6 @@ If you want, I can:
 - Update the server to the exact Gemini REST schema if you provide the endpoint and sample payload/response.
 - Add authentication and rate-limiting.
 - Improve the graph UI (color legend, branch labels, draggable hierarchy, commit-like metadata UI).
+=======
+# GenAI
+>>>>>>> origin/main
