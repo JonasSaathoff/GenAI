@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IdeaForge</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://unpkg.com/vis-network@9.1.0/dist/vis-network.min.js"></script>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>IdeaForge</h1>
+    </header>
+
+    <section id="controls">
+      <div class="control-row">
+        <input id="new-idea-input" placeholder="Type a new idea..." />
+        <button id="btn-new-idea">New Idea</button>
+      </div>
+
+      <div class="control-row">
+        <button id="btn-inspire">Inspire (branch)</button>
+        <button id="btn-synthesize">Synthesize (merge)</button>
+        <button id="btn-refine">Refine Title</button>
+      </div>
+
+      <div class="control-row">
+        <textarea id="refine-input" placeholder="Long-form idea or node content to refine title (for 'Refine')"></textarea>
+      </div>
+
+      <div class="hint">Select nodes in the graph (click/ctrl+click) to synthesize them.</div>
+    </section>
+
+    <section id="graph">
+      <div id="mynetwork"></div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
