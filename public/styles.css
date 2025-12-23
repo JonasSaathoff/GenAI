@@ -8,5 +8,5 @@ input, textarea { width:100%; padding:8px; border:1px solid #d1d5db; border-radi
 button { padding:8px 12px; background:#111827; color:white; border:none; border-radius:6px; cursor:pointer; }
 button:disabled { opacity:0.5; cursor:default; }
 #graph { padding: 12px; }
-#mynetwork { width: 100%; height: calc(100vh - 90px); background: white; border-radius:8px; box-shadow: 0 1px 4px rgba(2,6,23,0.06); }
+#mynetwork { width: 100%; height: calc(100vh - 120px); background: white; border-radius:8px; box-shadow: 0 1px 4px rgba(2,6,23,0.06); }
 .hint { font-size: 12px; color: #6b7280; }

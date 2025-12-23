@@ -1,2 +1,2 @@
-HUGGINGFACE_API_KEY present: true GEMINI_API_KEY present: true
+HUGGINGFACE_API_KEY present: false GEMINI_API_KEY present: true
 IdeaForge server listening on port 3000

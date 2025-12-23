@@ -1,7 +1,12 @@
 node_modules/
 .env
+.env.bak
 dist/
 .DS_Store
 coverage/
 npm-debug.log*
 *.local
+*.log
+ideaforge.db
+ideaforge.db-shm
+ideaforge.db-wal

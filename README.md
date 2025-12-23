@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # IdeaForge
 
 A small Git-inspired creative support tool for ideation, branching, and synthesis. This scaffold implements:
@@ -7,11 +6,11 @@ A small Git-inspired creative support tool for ideation, branching, and synthesi
 - Exponential backoff for calls to the Gemini generative API.
 - A single-page frontend using `vis-network` to render the idea graph and controls for New Idea, Inspire, Synthesize, Refine Title.
 
-Requirements
+## Requirements
 - Node.js 18+ recommended
 - A Gemini API key with permission to call the chosen model
 
-Setup (macOS / zsh)
+## Setup (macOS / zsh)
 
 1. Install dependencies
 
@@ -23,12 +22,12 @@ npm install
 2. Create a `.env` file with your Gemini key and optional overrides
 
 ```bash
-cat > .env <<EOF
+cat > .env <<ENVEOF
 GEMINI_API_KEY=your_api_key_here
 # Optional:
 # GEMINI_API_URL=https://api.generative.googleapis.com/v1/models
-# GEMINI_MODEL=gemini-2.5-flash-preview-09-2025
-EOF
+# GEMINI_MODEL=gemini-2.0-flash
+ENVEOF
 ```
 
 3. Run the server
@@ -41,14 +40,21 @@ npm start
 
 http://localhost:3000
 
-Notes & TODOs
-- The server uses a generic request body for Gemini; depending on the exact REST schema you may need to adapt `server.js` to match the official Gemini request/response fields. The code includes extraction fallbacks.
-- The frontend expects the API to return plain text (for `inspire`) or a `synthesized` string (for `synthesize`) and a `title` (for `refine-title`).
+## Features
 
-If you want, I can:
-- Update the server to the exact Gemini REST schema if you provide the endpoint and sample payload/response.
-- Add authentication and rate-limiting.
-- Improve the graph UI (color legend, branch labels, draggable hierarchy, commit-like metadata UI).
-=======
-# GenAI
->>>>>>> origin/main
+- **New Idea**: Add a new node to the idea tree
+- **Inspire**: Generate creative variations on selected ideas
+- **Synthesize**: Combine multiple selected ideas into one
+- **Refine Title**: Auto-generate concise titles for ideas
+
+## Notes
+
+- The server uses exponential backoff for API reliability
+- The frontend uses vis-network for interactive idea graph visualization
+- Multiple API providers supported: Gemini, HuggingFace, OpenAI
+
+## API Endpoints
+
+- `POST /api/inspire` - Generate inspired variations
+- `POST /api/synthesize` - Combine ideas
+- `POST /api/refine-title` - Auto-generate titles
