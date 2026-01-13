@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import Database from 'better-sqlite3';
 import rateLimit from 'express-rate-limit';
 import winston from 'winston';
+import multer from 'multer';
 
 dotenv.config();
 
@@ -94,6 +95,19 @@ app.use('/api/', apiLimiter);
 app.use('/api/inspire', aiLimiter);
 app.use('/api/synthesize', aiLimiter);
 app.use('/api/refine-title', aiLimiter);
+
+// Multer setup for file uploads
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/json') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only JSON files are allowed'));
+    }
+  }
+});
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 // Default to the Generative Language v1beta endpoint which works with the
@@ -546,6 +560,152 @@ app.delete('/api/projects/:id', (req, res) => {
   } catch (err) {
     logger.error('Delete project error', { error: err.message });
     res.status(500).json({ error: 'Failed to delete project', code: 'DATABASE_ERROR' });
+  }
+});
+
+// Export endpoints
+app.get('/api/export/:id/json', (req, res) => {
+  try {
+    const { id } = req.params;
+    const stmt = db.prepare('SELECT id, name, ideaTree, createdAt, updatedAt FROM projects WHERE id = ?');
+    const project = stmt.get(id);
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found', code: 'NOT_FOUND' });
+    }
+    project.ideaTree = JSON.parse(project.ideaTree);
+    
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="${project.name.replace(/[^a-z0-9]/gi, '_')}.json"`);
+    logger.info('Project exported as JSON', { id, name: project.name });
+    res.json(project);
+  } catch (err) {
+    logger.error('Export JSON error', { error: err.message });
+    res.status(500).json({ error: 'Failed to export', code: 'EXPORT_ERROR' });
+  }
+});
+
+app.get('/api/export/:id/markdown', (req, res) => {
+  try {
+    const { id } = req.params;
+    const stmt = db.prepare('SELECT id, name, ideaTree FROM projects WHERE id = ?');
+    const project = stmt.get(id);
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found', code: 'NOT_FOUND' });
+    }
+    const ideaTree = JSON.parse(project.ideaTree);
+    
+    // Build markdown tree
+    const buildMarkdownTree = (nodes) => {
+      let markdown = `# ${project.name}\n\n`;
+      
+      // Find root nodes
+      const rootNodes = nodes.filter(n => !n.parentId);
+      const nodeMap = new Map(nodes.map(n => [n.id, n]));
+      
+      const renderNode = (node, depth = 0) => {
+        const indent = '  '.repeat(depth);
+        markdown += `${indent}- **${node.title || node.label}**\n`;
+        if (node.content && node.content !== node.title) {
+          markdown += `${indent}  ${node.content}\n`;
+        }
+        markdown += '\n';
+        
+        // Find and render children
+        const children = nodes.filter(n => n.parentId === node.id);
+        children.forEach(child => renderNode(child, depth + 1));
+      };
+      
+      rootNodes.forEach(node => renderNode(node, 0));
+      return markdown;
+    };
+    
+    const markdown = buildMarkdownTree(ideaTree);
+    
+    res.setHeader('Content-Type', 'text/markdown');
+    res.setHeader('Content-Disposition', `attachment; filename="${project.name.replace(/[^a-z0-9]/gi, '_')}.md"`);
+    logger.info('Project exported as Markdown', { id, name: project.name });
+    res.send(markdown);
+  } catch (err) {
+    logger.error('Export Markdown error', { error: err.message });
+    res.status(500).json({ error: 'Failed to export', code: 'EXPORT_ERROR' });
+  }
+});
+
+app.get('/api/export/:id/csv', (req, res) => {
+  try {
+    const { id } = req.params;
+    const stmt = db.prepare('SELECT id, name, ideaTree FROM projects WHERE id = ?');
+    const project = stmt.get(id);
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found', code: 'NOT_FOUND' });
+    }
+    const ideaTree = JSON.parse(project.ideaTree);
+    
+    // Build CSV
+    const escapeCSV = (str) => {
+      if (!str) return '""';
+      const escaped = String(str).replace(/"/g, '""');
+      return `"${escaped}"`;
+    };
+    
+    let csv = 'ID,Title,Content,Parent ID,Branch Color,Level,Timestamp\n';
+    ideaTree.forEach(node => {
+      csv += `${escapeCSV(node.id)},${escapeCSV(node.title || node.label)},${escapeCSV(node.content)},${escapeCSV(node.parentId || '')},${escapeCSV(node.branchColor)},${node.level || 0},${node.timestamp || ''}\n`;
+    });
+    
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${project.name.replace(/[^a-z0-9]/gi, '_')}.csv"`);
+    logger.info('Project exported as CSV', { id, name: project.name });
+    res.send(csv);
+  } catch (err) {
+    logger.error('Export CSV error', { error: err.message });
+    res.status(500).json({ error: 'Failed to export', code: 'EXPORT_ERROR' });
+  }
+});
+
+// Import endpoint
+app.post('/api/import', upload.single('file'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded', code: 'NO_FILE' });
+    }
+    
+    const fileContent = req.file.buffer.toString('utf-8');
+    let projectData;
+    
+    try {
+      projectData = JSON.parse(fileContent);
+    } catch (parseErr) {
+      logger.warn('Import failed - invalid JSON', { error: parseErr.message });
+      return res.status(400).json({ error: 'Invalid JSON file', code: 'INVALID_JSON' });
+    }
+    
+    // Validate structure
+    if (!projectData.ideaTree || !Array.isArray(projectData.ideaTree)) {
+      return res.status(400).json({ error: 'Invalid project structure - missing ideaTree', code: 'INVALID_STRUCTURE' });
+    }
+    
+    // Generate new ID for imported project
+    const newId = uuidv4();
+    const newName = projectData.name ? `${projectData.name} (imported)` : 'Imported Project';
+    const now = Date.now();
+    
+    const stmt = db.prepare(`
+      INSERT INTO projects (id, name, ideaTree, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+    stmt.run(newId, newName, JSON.stringify(projectData.ideaTree), now, now);
+    
+    logger.info('Project imported', { id: newId, name: newName, nodeCount: projectData.ideaTree.length });
+    res.json({ 
+      id: newId, 
+      name: newName, 
+      ideaTree: projectData.ideaTree,
+      imported: true 
+    });
+  } catch (err) {
+    logger.error('Import error', { error: err.message, stack: err.stack });
+    res.status(500).json({ error: 'Failed to import project', code: 'IMPORT_ERROR' });
   }
 });
 

@@ -38,6 +38,16 @@
       </div>
 
       <div class="control-row">
+        <button id="btn-export-json" style="background-color: #0ea5a3;">Export JSON</button>
+        <button id="btn-export-md" style="background-color: #10b981;">Export Markdown</button>
+        <button id="btn-export-csv" style="background-color: #fb923c;">Export CSV</button>
+        <label for="file-import" style="flex: 1; padding: 10px; background-color: #7c3aed; color: white; text-align: center; border-radius: 4px; cursor: pointer; margin: 0;">
+          Import JSON
+          <input type="file" id="file-import" accept=".json" style="display: none;" />
+        </label>
+      </div>
+
+      <div class="control-row">
         <textarea id="refine-input" placeholder="Long-form idea or node content to refine title (for 'Refine')"></textarea>
       </div>
 

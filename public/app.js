@@ -163,6 +163,10 @@ const projectNameInput = document.getElementById('project-name');
 const btnSaveProject = document.getElementById('btn-save-project');
 const btnLoadProject = document.getElementById('btn-load-project');
 const btnNewProject = document.getElementById('btn-new-project');
+const btnExportJSON = document.getElementById('btn-export-json');
+const btnExportMD = document.getElementById('btn-export-md');
+const btnExportCSV = document.getElementById('btn-export-csv');
+const fileImport = document.getElementById('file-import');
 const loadModal = document.getElementById('load-modal');
 const projectsList = document.getElementById('projects-list');
 const loadCancel = document.getElementById('load-cancel');
@@ -594,6 +598,91 @@ btnLoadProject.addEventListener('click', loadProjects);
 btnNewProject.addEventListener('click', newProject);
 loadCancel.addEventListener('click', () => {
   loadModal.style.display = 'none';
+});
+
+// Export handlers
+btnExportJSON.addEventListener('click', () => {
+  if (!currentProjectId) {
+    alert('Please save the project first before exporting.');
+    return;
+  }
+  window.location.href = `/api/export/${currentProjectId}/json`;
+});
+
+btnExportMD.addEventListener('click', () => {
+  if (!currentProjectId) {
+    alert('Please save the project first before exporting.');
+    return;
+  }
+  window.location.href = `/api/export/${currentProjectId}/markdown`;
+});
+
+btnExportCSV.addEventListener('click', () => {
+  if (!currentProjectId) {
+    alert('Please save the project first before exporting.');
+    return;
+  }
+  window.location.href = `/api/export/${currentProjectId}/csv`;
+});
+
+// Import handler
+fileImport.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const resp = await fetch('/api/import', {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!resp.ok) {
+      const error = await resp.json();
+      throw new Error(error.error || 'Import failed');
+    }
+    
+    const result = await resp.json();
+    
+    // Load the imported project
+    currentProjectId = result.id;
+    currentProjectName = result.name;
+    projectNameInput.value = result.name;
+    
+    localStorage.setItem('currentProjectId', currentProjectId);
+    localStorage.setItem('currentProjectName', currentProjectName);
+    
+    // Clear current tree and load imported one
+    ideaTree.length = 0;
+    ideaTree.push(...result.ideaTree);
+    
+    // Rebuild vis-network
+    nodes.clear();
+    edges.clear();
+    ideaTree.forEach(n => {
+      nodes.add({
+        id: n.id,
+        label: n.label,
+        title: n.content,
+        color: { background: branchColorToHex(n.branchColor), border: '#bfc7d6' },
+        borderWidth: 1,
+        level: n.level
+      });
+    });
+    rebuildEdges();
+    selectionSet.clear();
+    
+    try { network.fit({ animation: true }); } catch {}
+    alert(`Project "${result.name}" imported successfully!`);
+  } catch (err) {
+    console.error('Import error:', err);
+    alert('Failed to import: ' + err.message);
+  } finally {
+    // Reset file input
+    fileImport.value = '';
+  }
 });
 
 // Expose ideaTree and project functions for debugging
