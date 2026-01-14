@@ -14,68 +14,53 @@
     </header>
 
     <section id="controls">
-      
-      <div class="control-group">
-        <label class="group-label">Context</label>
-        <select id="domain-select">
-          <option value="general">⚡ General Ideation</option>
-          <option value="story">📖 Story / Narrative</option>
+      <div class="control-row" style="background: #f3f4f6; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
+        <label for="domain-select" style="font-weight: bold; margin-right: 10px;">Creative Domain:</label>
+        <select id="domain-select" style="flex: 1; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+          <option value="general">⚡ General Ideation (Broad)</option>
+          <option value="story">📖 Short Story / Narrative</option>
           <option value="business">🚀 Business & Innovation</option>
         </select>
       </div>
 
-      <div class="control-group">
-        <label class="group-label">Create</label>
-        <div class="btn-row">
-          <input id="new-idea-input" placeholder="Enter a concept..." />
-          <button id="btn-new-idea" class="btn-primary" style="white-space: nowrap;">+</button>
-        </div>
+      <div class="control-row">
+        <input id="new-idea-input" placeholder="Type a new idea..." />
+        <button id="btn-new-idea">New Idea</button>
       </div>
 
-      <div class="control-group">
-        <label class="group-label">AI Agents</label>
-        <div class="btn-grid">
-          <button id="btn-inspire" class="btn-ai">✨ Inspire</button>
-          <button id="btn-synthesize" class="btn-ai">🔗 Synthesize</button>
-          <button id="btn-critique" class="btn-ai">⚠️ Critique</button>
-          <button id="btn-refine" class="btn-ai">✏️ Refine</button>
-        </div>
-        <textarea id="refine-input" placeholder="Paste text here to refine title..." rows="2" style="font-size: 0.8rem; margin-top:5px;"></textarea>
+      <div class="control-row">
+        <button id="btn-inspire">Inspire (Diverge)</button>
+        <button id="btn-critique" style="background-color: #ef4444;">Critique (Filter)</button>
+        <button id="btn-synthesize">Synthesize (Converge)</button>
+        <button id="btn-refine">Refine Title</button>
       </div>
 
-      <div class="control-group">
-        <label class="group-label">Selection</label>
-        <div class="btn-grid">
-          <button id="btn-edit">Edit Node</button>
-          <button id="btn-delete" class="btn-danger">Delete</button>
-        </div>
+      <div class="control-row">
+        <button id="btn-edit">Edit Selected</button>
+        <button id="btn-delete" style="background-color: #ef4444;">Delete Selected</button>
       </div>
 
-      <div class="control-group">
-        <label class="group-label">Project</label>
-        <input id="project-name" placeholder="Project Name" style="margin-bottom: 8px;" />
-        <div class="btn-grid">
-          <button id="btn-save-project" class="btn-success">Save</button>
-          <button id="btn-load-project">Load</button>
-        </div>
-        <button id="btn-new-project" style="margin-top: 8px; width: 100%;">New Empty Project</button>
+      <div class="control-row">
+        <input id="project-name" placeholder="Project name..." />
+        <button id="btn-save-project">Save Project</button>
+        <button id="btn-load-project">Load Project</button>
+        <button id="btn-new-project" style="background-color: #7c3aed;">New Project</button>
       </div>
 
-      <div class="control-group">
-        <label class="group-label">Data & Export</label>
-        <div class="btn-grid">
-          <button id="btn-export-json">JSON</button>
-          <button id="btn-export-md">Markdown</button>
-          <button id="btn-export-csv">CSV</button>
-          <button id="btn-export-img">Image</button>
-        </div>
-        <label for="file-import" class="file-btn" style="margin-top: 8px; display: block;">
-          Import JSON
+      <div class="control-row">
+        <button id="btn-export-json" style="background-color: #0ea5a3;">JSON</button>
+        <button id="btn-export-md" style="background-color: #10b981;">MD</button>
+        <button id="btn-export-csv" style="background-color: #fb923c;">CSV</button>
+        <button id="btn-export-img" style="background-color: #3b82f6;">PNG Image</button>
+        <label for="file-import" style="flex: 1; padding: 10px; background-color: #7c3aed; color: white; text-align: center; border-radius: 4px; cursor: pointer; margin: 0;">
+          Import
           <input type="file" id="file-import" accept=".json" style="display: none;" />
         </label>
       </div>
 
-      <div class="hint">Select nodes in the graph (click/ctrl+click) to use AI tools.</div>
+      <div class="control-row">
+        <textarea id="refine-input" placeholder="Long-form idea or node content to refine title (for 'Refine')"></textarea>
+      </div>
 
       <div id="edit-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 1000;">
         <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 600px;">
@@ -96,6 +81,8 @@
           <button id="load-cancel" style="width: 100%; padding: 10px; background-color: #9ca3af; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
         </div>
       </div>
+
+      <div class="hint">Select nodes in the graph (click/ctrl+click) to synthesize them.</div>
     </section>
 
     <section id="graph">
