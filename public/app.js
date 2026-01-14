@@ -32,9 +32,21 @@ function wrapText(text, width = 80) {
 
 function makeNode({ id, title, content, parentId = null, branchColor = 'blue' }) {
   const formatted = wrapText(content, 80);
-  // Limit tooltip to first ~4 lines to avoid huge overlays
   const tooltip = formatted.split('\n').slice(0, 4).join('\n');
   return { id, label: title, title: tooltip, content: formatted, parentId, branchColor, timestamp: Date.now() };
+}
+
+// ---------------------------------------------------------
+// Loading State Helper
+// ---------------------------------------------------------
+function setLoading(btn, isLoading) {
+  if (isLoading) {
+    btn.classList.add('btn-loading');
+    btn.disabled = true;
+  } else {
+    btn.classList.remove('btn-loading');
+    btn.disabled = false;
+  }
 }
 
 // Create initial root node
@@ -348,7 +360,8 @@ btnInspire.addEventListener('click', async () => {
   const nodeId = selectedIds[0];
   const node = ideaTree.find(n => n.id === nodeId);
   if (!node) return;
-  btnInspire.disabled = true;
+  
+  setLoading(btnInspire, true);
   try {
     const resp = await fetch('/api/inspire', { 
       method: 'POST', 
@@ -385,7 +398,7 @@ btnInspire.addEventListener('click', async () => {
     console.error(err);
     alert('Inspire failed: ' + (err.message || err));
   } finally {
-    btnInspire.disabled = false;
+    setLoading(btnInspire, false);
     // Auto-save
     if (currentProjectId) {
       saveCurrentProject().catch(err => console.error('Auto-save error:', err));
@@ -400,7 +413,8 @@ btnSynthesize.addEventListener('click', async () => {
     return;
   }
   const concepts = selectedIds.slice(0, 3).map(id => ideaTree.find(n => n.id === id).content);
-  btnSynthesize.disabled = true;
+  
+  setLoading(btnSynthesize, true);
   try {
     const resp = await fetch('/api/synthesize', { 
       method: 'POST', 
@@ -425,7 +439,7 @@ btnSynthesize.addEventListener('click', async () => {
     console.error(err);
     alert('Synthesize failed: ' + (err.message || err));
   } finally {
-    btnSynthesize.disabled = false;
+    setLoading(btnSynthesize, false);
     // Auto-save
     if (currentProjectId) {
       saveCurrentProject().catch(err => console.error('Auto-save error:', err));
@@ -448,9 +462,7 @@ btnCritique.addEventListener('click', async () => {
   const node = ideaTree.find(n => n.id === nodeId);
   if (!node) return;
 
-  btnCritique.disabled = true;
-  const originalText = btnCritique.innerText;
-  btnCritique.innerText = 'Critiquing...';
+  setLoading(btnCritique, true);
 
   try {
     const resp = await fetch('/api/critique', { 
@@ -494,8 +506,7 @@ btnCritique.addEventListener('click', async () => {
     console.error(err);
     alert('Critique failed: ' + (err.message || err));
   } finally {
-    btnCritique.disabled = false;
-    btnCritique.innerText = originalText;
+    setLoading(btnCritique, false);
     if (currentProjectId) {
       saveCurrentProject().catch(err => console.error('Auto-save error:', err));
     }
@@ -505,7 +516,8 @@ btnCritique.addEventListener('click', async () => {
 btnRefine.addEventListener('click', async () => {
   const text = refineInput.value.trim();
   if (!text) return alert('Provide long-form idea text in the textarea.');
-  btnRefine.disabled = true;
+  
+  setLoading(btnRefine, true);
   try {
     const resp = await fetch('/api/refine-title', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: text }) });
     const json = await resp.json();
@@ -532,7 +544,7 @@ btnRefine.addEventListener('click', async () => {
     console.error(err);
     alert('Refine failed: ' + (err.message || err));
   } finally {
-    btnRefine.disabled = false;
+    setLoading(btnRefine, false);
     // Auto-save
     if (currentProjectId) {
       saveCurrentProject().catch(err => console.error('Auto-save error:', err));
@@ -801,7 +813,7 @@ const btnExportImg = document.getElementById('btn-export-img');
 
 btnExportImg.addEventListener('click', () => {
   // Fit the graph so everything is visible before taking the picture
-  if (network) network.fit({ 
+  network.fit({ 
     animation: false,
     scale: 1.0 
   });
@@ -874,7 +886,7 @@ fileImport.addEventListener('change', async (e) => {
     rebuildEdges();
     selectionSet.clear();
     
-    try { if (network) network.fit({ animation: true }); } catch {}
+    try { network.fit({ animation: true }); } catch {}
     alert(`Project "${result.name}" imported successfully!`);
   } catch (err) {
     console.error('Import error:', err);

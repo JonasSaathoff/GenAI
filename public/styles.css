@@ -246,3 +246,29 @@ body {
   }
   #projects-list div:last-child { border-bottom: none; }
 
+  /* --- LOADING STATE (Apple-style Spinner) --- */
+  .btn-loading {
+    color: transparent !important;
+    position: relative;
+    pointer-events: none;
+    cursor: wait;
+  }
+
+  .btn-loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 18px;
+    height: 18px;
+    margin-top: -9px;
+    margin-left: -9px;
+    border: 2px solid rgba(0,0,0,0.1);
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }

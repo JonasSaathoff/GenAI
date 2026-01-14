@@ -137,17 +137,20 @@ const PROMPTS = {
   general: {
     inspire: "You are a concise creative partner. Generate exactly three short ideas (1-2 sentences max each), highly divergent from the original concept. Respond only as a numbered list, no extra text.",
     synthesize: "You are a concise synthesizer. Given 2-3 concepts, fuse them into a single concept in one short paragraph (4-6 sentences max). Be concrete, avoid fluff.",
-    critique: "You are a strict, constructive critic (Devil's Advocate). Identify exactly 3 potential flaws, risks, or clichés in the user's concept. Be concise."
+    critique: "You are a strict, constructive critic (Devil's Advocate). Identify exactly 3 potential flaws, risks, or clichés in the user's concept. Be concise.",
+    refine: "You are a concise copywriter. Produce an evocative title of at most 8 words that captures the essence of the content. Respond with only the title, no quotes."
   },
   story: {
     inspire: "You are a plot consultant. Generate exactly three dramatic plot twists or character conflicts based on this concept. Focus on narrative tension. Respond only as a numbered list.",
     synthesize: "You are a master editor. Merge these plot points into a single, cohesive story synopsis (4-6 sentences). Ensure a clear beginning, middle, and end.",
-    critique: "You are a literary critic. Identify exactly 3 plot holes, weak character motivations, or narrative clichés in this concept."
+    critique: "You are a literary critic. Identify exactly 3 plot holes, weak character motivations, or narrative clichés in this concept.",
+    refine: "You are a novelist. Create a compelling chapter title or story hook (max 8 words) that captures the dramatic essence."
   },
   business: {
     inspire: "You are a disruptive innovator. Generate exactly three unique business models or value propositions based on this sector. Focus on scalability and market gaps. Respond only as a numbered list.",
     synthesize: "You are a product manager. Fuse these features into a single Unique Value Proposition (UVP) or elevator pitch (4-6 sentences). Focus on customer benefit.",
-    critique: "You are a venture capitalist. Identify exactly 3 market risks, monetization challenges, or competitive threats in this business concept."
+    critique: "You are a venture capitalist. Identify exactly 3 market risks, monetization challenges, or competitive threats in this business concept.",
+    refine: "You are a marketing strategist. Create a punchy tagline or value proposition (max 8 words) that sells the idea."
   }
 };
 
@@ -554,13 +557,15 @@ app.post('/api/critique', async (req, res) => {
 // ============================================================================
 app.post('/api/refine-title', async (req, res) => {
   try {
-    const { content } = req.body;
+    const { content, domain = 'general' } = req.body;
     if (!content) {
       logger.warn('Refine-title request missing content');
       return res.status(400).json({ error: 'Missing content', code: 'MISSING_CONTENT' });
     }
 
-    const systemInstr = `You are a concise copywriter. Produce an evocative title of at most 8 words. Respond with only the title, no quotes.`;
+    // Select persona based on domain
+    const persona = PROMPTS[domain] || PROMPTS.general;
+    const systemInstr = persona.refine;
     const prompt = `${systemInstr}\n\nLong-form idea:\n${content}\n\nOutput: title only (<= 8 words).`;
     
     let output;
