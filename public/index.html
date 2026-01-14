@@ -1,112 +1,106 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>IdeaForge</title>
-  <link rel="stylesheet" href="styles.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/vis-network@9.1.0/dist/vis-network.min.js"></script>
-</head>
-<body>
-  <div id="app">
-    
-    <section id="controls">
-      <header>
-        <h1>IdeaForge</h1>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>IdeaForge</title>
+    <link rel="stylesheet" href="styles.css?v=20260114-2" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/vis-network@9.1.0/dist/vis-network.min.js"></script>
+  </head>
+  <body>
+    <div id="app">
+      <header id="top-bar">
+        <div class="logo-section">
+          <h1>IdeaForge</h1>
+        </div>
+        <div class="divider-vertical"></div>
+        <div class="toolbar-section">
+          <input id="project-name" placeholder="Untitled Project" class="toolbar-input" />
+          <div class="btn-group">
+            <button id="btn-save-project" class="btn-tool btn-save">Save</button>
+            <button id="btn-load-project" class="btn-tool">Load</button>
+            <button id="btn-new-project" class="btn-tool">New</button>
+          </div>
+        </div>
+        <div class="spacer"></div>
+        <div class="toolbar-section right">
+          <span class="label">Export</span>
+          <button id="btn-export-json" class="btn-tool">JSON</button>
+          <button id="btn-export-md" class="btn-tool">MD</button>
+          <button id="btn-export-csv" class="btn-tool">CSV</button>
+          <button id="btn-export-img" class="btn-tool">PNG</button>
+          <div class="divider-vertical"></div>
+          <label for="file-import" class="btn-tool file-btn">
+            Import JSON
+            <input type="file" id="file-import" accept=".json" />
+          </label>
+        </div>
       </header>
-      
-      <div class="control-group">
-        <label class="group-label">Context</label>
-        <div class="input-wrapper">
-          <select id="domain-select">
+
+      <aside id="sidebar">
+        <div class="panel-section">
+          <label class="section-label">Context</label>
+          <select id="domain-select" class="full-width">
             <option value="general">⚡ General Ideation</option>
             <option value="story">📖 Short Story</option>
             <option value="business">🚀 Business</option>
           </select>
         </div>
-      </div>
 
-      <div class="control-group">
-        <label class="group-label">New Idea</label>
-        <div class="row-input">
-          <input id="new-idea-input" placeholder="Type a concept..." />
-          <button id="btn-new-idea" class="btn-primary" title="Add">
-            <span>+</span>
-          </button>
+        <div class="panel-section">
+          <label class="section-label">New Idea</label>
+          <div class="input-row">
+            <input id="new-idea-input" placeholder="Type a concept..." />
+            <button id="btn-new-idea" class="btn-primary">Add</button>
+          </div>
         </div>
-      </div>
 
-      <div class="control-group">
-        <label class="group-label">AI Agents</label>
-        <div class="grid-2">
-          <button id="btn-inspire" class="btn-ai inspire">✨ Inspire</button>
-          <button id="btn-synthesize" class="btn-ai synth">🔗 Synthesize</button>
-          <button id="btn-critique" class="btn-ai crit">⚠️ Critique</button>
-          <button id="btn-refine" class="btn-ai refine">Aa Refine</button>
+        <div class="panel-section">
+          <label class="section-label">AI Agents</label>
+          <div class="grid-2x2">
+            <button id="btn-inspire" class="btn-ai inspire">Inspire</button>
+            <button id="btn-synthesize" class="btn-ai synth">Synthesize</button>
+            <button id="btn-critique" class="btn-ai crit">Critique</button>
+            <button id="btn-refine" class="btn-ai refine">Refine</button>
+          </div>
+        <label class="section-label" style="margin-top: 12px;">Refine Text</label>
+        <textarea id="refine-input" placeholder="Paste or type long-form text to refine..." style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid transparent; background: #F2F2F7; font-size: 13px; outline: none; min-height: 80px; resize: vertical;"></textarea>
         </div>
-        <textarea id="refine-input" style="display:none;"></textarea>
-      </div>
-
-      <div class="control-group">
-        <label class="group-label">Selection</label>
-        <div class="grid-2">
+      <div class="panel-section">
+        <label class="section-label">Selection</label>
+        <div class="grid-2x2">
           <button id="btn-edit" class="btn-secondary">Edit Node</button>
           <button id="btn-delete" class="btn-danger">Delete</button>
         </div>
-      </div>
+      </div>      </aside>
 
-      <div class="control-group">
-        <label class="group-label">Project</label>
-        <input id="project-name" placeholder="Project Name" />
-        <div class="grid-2" style="margin-top:8px;">
-          <button id="btn-save-project" class="btn-success">Save</button>
-          <button id="btn-load-project" class="btn-secondary">Load</button>
+      <main id="graph-container">
+        <div id="mynetwork"></div>
+        <div class="hint-badge">Shift+Click to select multiple</div>
+      </main>
+
+      <div id="edit-modal" class="modal-overlay">
+        <div class="modal-card">
+          <h2>Edit Node</h2>
+          <input id="edit-title" placeholder="Title" class="full-width mb-2" />
+          <textarea id="edit-content" placeholder="Content" class="full-width mb-2"></textarea>
+          <div class="grid-2x2">
+            <button id="edit-save" class="btn-success">Save Changes</button>
+            <button id="edit-cancel" class="btn-secondary">Cancel</button>
+          </div>
         </div>
-        <button id="btn-new-project" class="btn-ghost" style="margin-top:8px;">New / Clear</button>
       </div>
 
-      <div class="control-group">
-        <label class="group-label">Data</label>
-        <div class="grid-4">
-          <button id="btn-export-json">JSON</button>
-          <button id="btn-export-md">MD</button>
-          <button id="btn-export-csv">CSV</button>
-          <button id="btn-export-img">PNG</button>
-        </div>
-        <label for="file-import" class="file-upload">
-          Import JSON
-          <input type="file" id="file-import" accept=".json" />
-        </label>
-      </div>
-    </section>
-
-    <section id="graph">
-      <div id="mynetwork"></div>
-      <div class="hint">Shift+Click to select multiple nodes</div>
-    </section>
-
-    <div id="edit-modal" class="modal">
-      <div class="modal-content">
-        <h2>Edit Node</h2>
-        <input id="edit-title" placeholder="Title" />
-        <textarea id="edit-content" placeholder="Content"></textarea>
-        <div class="grid-2">
-          <button id="edit-save" class="btn-success">Save</button>
-          <button id="edit-cancel" class="btn-secondary">Cancel</button>
+      <div id="load-modal" class="modal-overlay">
+        <div class="modal-card">
+          <h2>Load Project</h2>
+          <div id="projects-list"></div>
+          <button id="load-cancel" class="btn-secondary full-width mt-2">Cancel</button>
         </div>
       </div>
     </div>
 
-    <div id="load-modal" class="modal">
-      <div class="modal-content">
-        <h2>Load Project</h2>
-        <div id="projects-list"></div>
-        <button id="load-cancel" class="btn-secondary" style="width:100%">Cancel</button>
-      </div>
-    </div>
-
-  </div>
-  <script src="app.js"></script>
-</body>
+    <script src="app.js"></script>
+  </body>
 </html>
