@@ -362,13 +362,13 @@ app.post('/api/inspire', async (req, res) => {
     try {
       if (process.env.OLLAMA_URL) {
         logger.info('Orchestrator: Routing "inspire" to Ollama (Creative Agent)');
-        output = await callOllama(prompt, 160, OLLAMA_MODEL);
+        output = await callOllama(prompt, 300, OLLAMA_MODEL);
       } else if (GEMINI_API_KEY) {
         logger.info('Orchestrator: Routing "inspire" to Gemini (Backup Creative Agent)');
-        output = await callGemini(prompt, 160, process.env.GEMINI_MODEL || DEFAULT_MODEL);
+        output = await callGemini(prompt, 300, process.env.GEMINI_MODEL || DEFAULT_MODEL);
       } else {
         logger.info('Orchestrator: Fallback for "inspire" to OpenAI');
-        output = await callOpenAI(systemInstr, `Concept: ${content}\n\nRespond format strictly:\n1. Idea one (<= 2 sentences)\n2. Idea two (<= 2 sentences)\n3. Idea three (<= 2 sentences)`, 160);
+        output = await callOpenAI(systemInstr, `Concept: ${content}\n\nRespond format strictly:\n1. Idea one (<= 2 sentences)\n2. Idea two (<= 2 sentences)\n3. Idea three (<= 2 sentences)`, 300);
       }
     } catch (apiErr) {
       logger.error('AI API call failed', { error: apiErr.message, content: content.slice(0, 50) });
