@@ -1,168 +1,121 @@
-# IdeaForge
+# IdeaForge – Multi-Expert Creative Graph
 
-An AI-powered creative support tool featuring a **multi-expert system** with domain-specific personas for ideation, synthesis, and critical analysis. Built as a GenAI course project demonstrating multi-agent orchestration and local AI deployment.
+A local-first creative support tool that orchestrates multiple AI agents (Inspire, Synthesize, Refine, Critique) with domain-specific personas. Demonstrates a multi-expert architecture running fully on Ollama for offline use, with Gemini and OpenAI as optional fallbacks.
 
-## 🎯 Key Features
+📄 Read the report in [report.tex](report.tex)
 
-### Multi-Expert System
-Switch between specialized AI personas via dropdown selector:
-- **⚡ General Ideation** - Broad creative exploration
-- **📖 Short Story/Narrative** - Plot consultant, master editor, literary critic
-- **🚀 Business & Innovation** - Disruptive innovator, product manager, venture capitalist
+## Overview
 
-### Four AI Agents
-Each domain uses specialized prompts across four creative functions:
-- **Creative Agent (Inspire)** - Generates 3 divergent ideas with domain-specific constraints
-- **Reasoning Agent (Synthesize)** - Merges 2-3 concepts using domain logic (e.g., story synopsis vs. UVP)
-- **Linguistic Agent (Refine Title)** - Generates concise 8-word titles
-- **Critical Agent (Critique)** - Identifies 3 flaws/risks through domain-specific lens
+IdeaForge turns linear chat into a spatial graph so you can:
+- **Diverge:** Generate 3 alternative ideas from any node (Inspire)
+- **Converge:** Merge 2–3 nodes into one cohesive concept (Synthesize)
+- **Evaluate:** Add 3 targeted risks or flaws (Critique)
+- **Refine:** Produce concise (≤ 8-word) titles (Refine Title)
+- **Contextualize:** Switch domains (General, Story, Business) to adapt AI personas
+- **Export:** Save as JSON, Markdown, CSV, or high-res PNG
 
-### Interactive Graph Interface
-- **vis-network** hierarchical visualization with color-coded branches
-- Multi-select nodes, drag-and-drop positioning
-- Automatic spacing for inspired ideas (prevents overlap)
-- Color coding: blue (original), green (user), red (critique), purple (synthesis), orange (refined)
+## Project Structure
 
-### Project Management
-- SQLite persistence with save/load/delete
-- Multi-format export: JSON, Markdown, CSV, **PNG image**
-- JSON import with validation
-- Auto-save on AI operations
-
-## 🛠️ Technical Stack
-
-- **Backend**: Node.js/Express, better-sqlite3, winston logging
-- **Frontend**: vis-network 9.1.0, vanilla JavaScript
-- **AI Providers**: 
-  - **Primary**: Ollama/Mistral (local inference, no API limits)
-  - **Backup**: Gemini 2.0 Flash (cloud fallback)
-  - **Tertiary**: OpenAI GPT-3.5 (last resort)
-- **Rate Limiting**: 10 AI requests/minute per IP
-
-## 📋 Requirements
-
-- **Node.js 18+**
-- **Ollama** installed and running locally ([ollama.ai](https://ollama.ai))
-- **Mistral model** pulled: `ollama pull mistral`
-- (Optional) Gemini API key for cloud backup
-
-## 🚀 Setup
-
-### 1. Install Ollama and Pull Mistral Model
-
-```bash
-# macOS
-brew install ollama
-ollama pull mistral
-
-# Verify Ollama is running
-curl http://localhost:11434/api/tags
+```
+├── server.js                 # Express backend, AI orchestration, persistence
+├── public/
+│   ├── index.html            # UI layout and controls
+│   ├── app.js                # vis-network graph, AI actions, exports
+│   └── styles.css            # Styling (palette configured in JS)
+├── report.tex                # Project write-up
+├── package.json              # Dependencies
+├── ideaforge.db              # SQLite database (created at runtime)
+└── README.md                 # Project documentation
 ```
 
-### 2. Install Dependencies
+## Installation & Setup
+
+### 1) Prerequisites
+- Node.js 18 or higher
+- Ollama running locally
+
+### 2) Model Setup
+Install Ollama and pull the model used for orchestration (e.g., Mistral):
 
 ```bash
-cd /Users/jonassaathoff/Desktop/GENAI-PROJECT
+ollama pull mistral
+```
+
+### 3) Install Dependencies
+
+```bash
 npm install
 ```
 
-### 3. Configure Environment
-
-Create a `.env` file:
+### 4) Configuration
+Create a `.env` file in the project root:
 
 ```bash
-cat > .env <<ENVEOF
-# Ollama (Primary - Local Inference)
 OLLAMA_URL=http://localhost:11434
 OLLAMA_MODEL=mistral
 
-# Gemini (Backup - Cloud Fallback)
-GEMINI_API_KEY=your_gemini_key_here_optional
-
-# Optional: OpenAI (Tertiary Fallback)
-# OPENAI_API_KEY=your_openai_key_here
-ENVEOF
+# Optional: cloud fallbacks
+# GEMINI_API_KEY=your_gemini_key
+# OPENAI_API_KEY=your_openai_key
 ```
 
-### 4. Run the Server
+### 5) Run the Server
 
 ```bash
 npm start
 ```
 
-### 5. Open in Browser
+Then open http://localhost:3000
 
-http://localhost:3000
+## Usage Guide
 
-## 📖 Usage Guide
+### Domain Selection
+- ⚡ General: Broad creative partner
+- 📖 Story: Plot Consultant, Master Editor, Literary Critic
+- 🚀 Business: Disruptive Innovator, Product Manager, Venture Capitalist
 
-1. **Select Domain**: Choose expertise mode (General/Story/Business) from dropdown
-2. **Create Root Idea**: Type initial concept and click "New Idea"
-3. **Inspire**: Select 1 node → Click "Inspire" → Get 3 divergent variations
-4. **Synthesize**: Select 2-3 nodes → Click "Synthesize" → Merge into cohesive concept
-5. **Critique**: Select 1 node → Click "Critique" → Identify 3 potential flaws
-6. **Refine Title**: Select 1 node → Click "Refine Title" → Auto-generate concise title
-7. **Export**: Download as JSON/Markdown/CSV/PNG for presentations
+### Creative Actions
+- **New Idea:** Create a root or child node
+- **Inspire:** Select 1 node → generates 3 divergent branches (auto-spaced)
+- **Synthesize:** Select 2–3 nodes → merges into one concept
+- **Critique:** Select 1 node → adds a warning node with 3 risks (markdown stripped)
+- **Refine Title:** Select 1 node → concise title (≤ 8 words)
 
-## 🎨 Domain-Specific Examples
+### Data Management
+- **Save/Load:** Stored locally in SQLite
+- **Import:** Upload exported JSON projects
+- **Export:**
+	- JSON: Full graph
+	- Markdown: Hierarchical outline
+	- CSV: Tabular data
+	- PNG: High-resolution graph snapshot
 
-### Story Domain
-- **Inspire**: "A detective discovers their partner is the killer" → Gets plot twists with narrative tension
-- **Synthesize**: Merges character arcs into cohesive story synopsis
-- **Critique**: Identifies plot holes, character motivation gaps, pacing issues
+## Technical Implementation
 
-### Business Domain
-- **Inspire**: "AI for education" → Gets market gap analysis, monetization models
-- **Synthesize**: Combines features into UVP/elevator pitch
-- **Critique**: Identifies competitive risks, monetization challenges, market viability
+### AI Orchestration
+- Agents: Creative (Inspire), Reasoning (Synthesize), Linguistic (Refine), Critical (Critique)
+- Routing: Ollama (primary) → Gemini (backup) → OpenAI (tertiary)
+- Domain adaptation: Prompts/personas swap per domain selection
+- Logging: Backend logs which provider handled each call
 
-## 🏗️ Architecture
+### Visualization (vis-network)
+- Hierarchical layout with generous spacing (`nodeSpacing: 450`, `levelSeparation: 250`)
+- Modern palette: Emerald (user), Violet (inspire), Rose (critique), Blue (synthesis), Amber (refine), Slate (root)
+- White text, shadows, rounded corners, navigation buttons, hover enabled
 
-### Multi-Agent Orchestration
-Server logs routing decisions for transparency:
-```
-Orchestrator: Routing "inspire" to Ollama (Creative Agent)
-Orchestrator: Routing "synthesize" to Ollama (Reasoning Agent)
-Orchestrator: Routing "critique" to Ollama (Critical Agent)
-```
+### Persistence
+- Database: better-sqlite3 with WAL
+- Session: localStorage keeps active project ID between reloads
 
-### Fallback Chain
-```
-Ollama (local) → Gemini (cloud) → OpenAI (tertiary)
-```
+## Quick Requirements Reference
 
-If Ollama unavailable, automatically routes to Gemini backup. If Gemini quota exhausted, falls back to OpenAI.
+- Node.js ≥ 18
+- Ollama running with `mistral` pulled
+- `.env` configured with at least `OLLAMA_URL` and `OLLAMA_MODEL`
 
-## 📊 API Endpoints
+## Notes
 
-- `POST /api/inspire` - Generate 3 divergent ideas (accepts `domain` param)
-- `POST /api/synthesize` - Merge 2-3 concepts (accepts `domain` param)
-- `POST /api/critique` - Identify 3 flaws/risks (accepts `domain` param)
-- `POST /api/refine-title` - Generate 8-word title
-- `POST /api/projects` - Save project
-- `GET /api/projects` - List all projects
-- `GET /api/projects/:id` - Load project
-- `DELETE /api/projects/:id` - Delete project
-- `GET /api/export/:id/:format` - Export as JSON/Markdown/CSV
-
-## 🔒 Security & Rate Limiting
-
-- 10 AI requests per minute per IP
-- 100 general requests per 15 minutes per IP
-- Input validation and sanitization
-- SQLite WAL mode for safe concurrent access
-
-## 📝 Notes
-
-- **Local-first design**: Ollama ensures no external API dependencies or rate limits
-- **Multi-expert personas**: Transform the tool from ChatGPT wrapper to domain-aware creative partner
-- **Orchestration logging**: Demonstrates multi-system coordination for academic submission
-- **Export capabilities**: PNG download provides "wow factor" for presentations
-
-## 🎓 Academic Context
-
-This project demonstrates:
-1. **Multi-system orchestration** - Task-based routing across specialized AI agents
-2. **Domain expertise** - Curated personas (e.g., Venture Capitalist vs. Literary Critic)
-3. **User agency** - Domain selector gives users control over creative constraints
-4. **Local deployment** - Ollama enables submission as standalone zip without cloud dependencies
+- Local-first: Works offline with Ollama
+- Multi-system: Demonstrates task-based routing across providers
+- User agency: Domain selector changes personas and tone
+- Stable layout: Overlap minimized via spacing; no manual x-coordinates
