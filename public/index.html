@@ -14,14 +14,24 @@
     </header>
 
     <section id="controls">
+      <div class="control-row" style="background: #f3f4f6; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
+        <label for="domain-select" style="font-weight: bold; margin-right: 10px;">Creative Domain:</label>
+        <select id="domain-select" style="flex: 1; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+          <option value="general">⚡ General Ideation (Broad)</option>
+          <option value="story">📖 Short Story / Narrative</option>
+          <option value="business">🚀 Business & Innovation</option>
+        </select>
+      </div>
+
       <div class="control-row">
         <input id="new-idea-input" placeholder="Type a new idea..." />
         <button id="btn-new-idea">New Idea</button>
       </div>
 
       <div class="control-row">
-        <button id="btn-inspire">Inspire (branch)</button>
-        <button id="btn-synthesize">Synthesize (merge)</button>
+        <button id="btn-inspire">Inspire (Diverge)</button>
+        <button id="btn-critique" style="background-color: #ef4444;">Critique (Filter)</button>
+        <button id="btn-synthesize">Synthesize (Converge)</button>
         <button id="btn-refine">Refine Title</button>
       </div>
 
@@ -38,11 +48,12 @@
       </div>
 
       <div class="control-row">
-        <button id="btn-export-json" style="background-color: #0ea5a3;">Export JSON</button>
-        <button id="btn-export-md" style="background-color: #10b981;">Export Markdown</button>
-        <button id="btn-export-csv" style="background-color: #fb923c;">Export CSV</button>
+        <button id="btn-export-json" style="background-color: #0ea5a3;">JSON</button>
+        <button id="btn-export-md" style="background-color: #10b981;">MD</button>
+        <button id="btn-export-csv" style="background-color: #fb923c;">CSV</button>
+        <button id="btn-export-img" style="background-color: #3b82f6;">PNG Image</button>
         <label for="file-import" style="flex: 1; padding: 10px; background-color: #7c3aed; color: white; text-align: center; border-radius: 4px; cursor: pointer; margin: 0;">
-          Import JSON
+          Import
           <input type="file" id="file-import" accept=".json" style="display: none;" />
         </label>
       </div>

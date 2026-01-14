@@ -1,0 +1,172 @@
+\documentclass[12pt, a4paper]{article}
+
+% Required packages
+\usepackage{graphicx} % For inserting images
+\usepackage{hyperref} % For clickable links
+\usepackage{geometry} % For better margins
+\usepackage{parskip}  % Adds space between paragraphs for better readability
+
+% Document Margins
+\geometry{
+    top=2.5cm,
+    bottom=2.5cm,
+    left=2.5cm,
+    right=2.5cm
+}
+
+\title{Generative AI Project Report}
+\author{Your Name}
+\date{January 2026}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+\section{Introduction and Project Aims}
+Most standard Large Language Model (LLM) interfaces present interactions as a single, linear chat stream. While effective for question-answer task, this format poorly reflects the non-linear and exploratory nature of creative work. This project addresses this problem by introducing IdeaForge, a graph-based creative support tool that represents ideas spatially rather than chronologically. 
+
+IdeaForge treats ideation as a manipulable network of connected nodes, allowing users to explore multiple narrative directions at once without losing context. The system integrates specific AI functions, such as an "inspire" endpoint to generate alternative directions when users feel stuck, and a "synthesize" to merge competing ideas directly within the visual map. This spatial approach shifts the user's role from a passive text consumer into an active architect of ideas, focusing on shaping narrative structure rather than on isolated outputs.
+
+\subsection{Problem Definition}
+The core challenge addressed by this project is the structural mismatch between how humans think creatively and how most LLM interfaces are designed. Creative ideation, particularly in narrative writing, is inherently recursive and exploratory. Writers frequently consider multiple possibilities at once, revisiting and recombining ideas as their understanding evolves. However, conventional chat-based AI tools force interaction into a single chronological thread.
+
+This linear interaction model often leads to context loss or cognitive fixation. Promising alternatives may be abandones simply because the interface makes managing parallel drafts or ideas too mentally draining. As a result, users are pushed into the role of passive editors, rather than actively orchestrating ideas. IdeaForge aims to solve this by externalizing thought into a spatial graph, aligning the interface with the user's internal model.
+
+\subsection{Creative Support}
+\textbf{\textit{Target Audience.}} 
+IdeaForge is designed for intermediate-to-advanced creative writers and researchers. These users typically have strong domain knowledge, but may struggle with narrative complexity, early-stage ideation, or periods of writer's block. Rather than letting an AI tool write for them, they seek an assistant that helps them organize, extend, and reflect on their own ideas.
+
+\textbf{\textit{Supported Creative Activity.}} 
+The tool focuses on exploratory ideation and combinatorial synthesis. In particular, it supports the cognitive "shuttling" that occurs between divergent thinking (generating multiple "what if" scenarios) and convergent thinking (combining these ideas into a coherent whole). By visualizing this process, IdeaForge enables users to explore a broader possibility space, mapping out branching plotlines or conceptual frameworks without committing to a single linear path early on.
+
+\subsection{System Functionality}
+To support these creative strategies, IdeaForge implements a non-linear node-link interface using the \texttt{vis-network} library. Ideas are represented as tangible, editable nodes within a graph, which users can manipulate. Creativity is supported through three primary mechanisms:
+\begin{enumerate}
+    \item \textbf{Augmented Divergence (the "Inspire" function):} 
+    To prevent fixation, the \texttt{/api/inspire} endpoint allows users to generate three alternative directions from a current idea. This encourages the user to consider new narrative paths.
+    \item \textbf{Computational Convergence (the "Synthesize" function):} 
+    The \texttt{/api/synthesize} endpoint allows users to select up to three nodes and merge them into a single cohesive paragraph. This automates part of the synthesis process, helping users scattered ideas into a unified concept.
+    \item \textbf{Structural Management:}
+    As idea graphs grow, managing complexity becomes increasingly important. Thus, the system includes an \texttt{/api/refine-title} endpoint that generates concise titles for long nodes, improving readability. The interface also supports full CRUD (Create, Read, Update, Delete) operations and JSON import/export, allowing projects to be iteratively refined and integrated into external workflows.
+\end{enumerate}
+
+\section{Background Research}
+% b. Background Research
+
+\subsection{Existing Systems}
+To contextualize IdeaForge within a broader landscape of creative support tools, we analyzed existing systems for narrative writing and structural planning. While many tools offer strong support for either writing or organization, few successfully bridge the gap between spatial structure and generative AI. Most solutions force users to choose between a flexible planning environment and AI-assisted text generation, rather than benefiting from both simultaneously.
+
+\textbf{\textit{Sudowrite.}} 
+Sudowrite is a popular AI tool for creative writers, offering features such as story engines and rewriting assistance. However, its workflow remains largely document-centric and linear. This encourages scrolling forward through text rather than exploring other possibilities. In pratice, it functions more as a text accelerator rather than as a tool for managing narrative structure.
+
+\textbf{\textit{Gingko Writer.}} 
+Gingko Writer takes the opposite approach by using a tree-based structure for organizing ideas. While this supports non-linear drafting, it lacks deep integration with generative AI. As a result, it serves primarily as a static container for thought rather than a co-creative partner. 
+
+\subsection{Resources}
+% ii. Useful resources
+\begin{itemize}
+    \item \textbf{Pre-trained models/APIs:} Ollama with Mistral model (local inference, primary provider), Gemini 2.0 Flash (cloud API for high-reasoning tasks), OpenAI GPT-3.5 Turbo (fallback for creative tasks).
+    \item \textbf{Libraries/Frameworks:} vis-network (graph visualization), Express.js (REST API), better-sqlite3 (local persistence), winston (structured logging), multer (file uploads), express-rate-limit (API protection).
+    \item \textbf{Data:} No training datasets required; system operates on user-generated idea graphs. Demonstration examples use short fiction prompts for testing divergence and synthesis capabilities.
+    \item \textbf{Reference implementations:} Standard chat UIs (baseline for comparison), mind-mapping tools with LLM plug-ins (for spatial ideation patterns), multi-agent prompt orchestration examples (for task routing architecture).
+\end{itemize}
+
+\subsection{Literature Review}
+Recent studies suggest that creative capabilities of LLMs are often overstated. Chakrabarty et al. (2024) found that without significant human guidance, LLMs struggle with rhetorical complexity and tend to default to familiar patterns, creating a "false promise" of creativity. In response, researchers argue that Creative Support Tools (CSTs) should move beyond raw text generation and instead provide guided scaffolding that keeps the human in control of the creative process (Bushnell \& Harrison, 2025). 
+
+This perspective aligns with the framework of Co-Creative Sense-Making (CCSM). Davis and Rafner (2025) describe creativity as a constant shuttling between "clamped" cognition, focused on execution and "unclamped" cognition, concerned with reflection on structure. Standard chat interfaces often disrupt this cycle by forcing users down a linear path. IdeaForge seeks to restore this dynamic by adopting Nakakoji’s (2006) metaphor of "skis", which are technologies that enable new types of experiences previously impossible for the user. 
+
+\section{Implementation}
+% c. Implementation
+
+\subsection{Project Type}
+% i. What type of project are you trying to implement?
+Proof-of-Concept co-creative tool that integrates a graph-based UI with hosted LLM APIs. The goal is to externalize ideation structure while keeping inference costs and complexity low.
+
+\subsection{Resources Used}
+% ii. What resources did you use in your implementation?
+\begin{itemize}
+    \item \textbf{APIs/Models:} Ollama with Mistral model (primary local provider for all endpoints), Gemini 2.0 Flash (cloud fallback), OpenAI GPT-3.5 Turbo (tertiary fallback). No custom training performed; all models used as-is via API inference.
+    \item \textbf{Front-end:} vis-network (v9.1.0) for interactive node-link graph visualization; vanilla JavaScript for CRUD operations, selection management, and multi-format exports (JSON/Markdown/CSV).
+    \item \textbf{Back-end:} Node.js/Express server with better-sqlite3 for project persistence; winston for structured logging; express-rate-limit for API abuse prevention; multer for JSON file imports.
+    \item \textbf{Architecture choices:} Single-process SQLite with Write-Ahead Logging (WAL) for simplicity and concurrent reads; stateless RESTful API endpoints; task-based model routing configured via \texttt{OLLAMA\_URL}, \texttt{GEMINI\_API\_KEY}, and \texttt{OPENAI\_API\_KEY} environment variables.
+\end{itemize}
+
+\subsection{Technical Construction}
+% iii. What did you implement to build your system?
+
+\textbf{Multi-Expert System Architecture:}
+IdeaForge implements a domain-specific multi-agent system where users can switch between specialized "expert personas" via a dropdown selector. Each domain (General Ideation, Short Story/Narrative, Business \& Innovation) uses tailored system prompts that adapt all four AI agents to domain-specific language and constraints:
+
+\begin{itemize}
+    \item \textbf{General Domain:} Broad creative partner for open-ended ideation
+    \item \textbf{Story Domain:} Plot consultant (inspire), master editor (synthesize), literary critic (critique) — focuses on narrative tension, character motivations, and plot coherence
+    \item \textbf{Business Domain:} Disruptive innovator (inspire), product manager (synthesize), venture capitalist (critique) — focuses on market gaps, value propositions, and monetization risks
+\end{itemize}
+
+This multi-expert approach satisfies the brief's requirement to explore how "multiple systems" support creativity by treating domain-specific personas as distinct creative support systems, each with specialized knowledge and constraints.
+
+\textbf{Four-Agent Task Orchestration:}
+Within each domain, four specialized AI agents handle distinct creative functions with intelligent provider routing:
+
+\begin{itemize}
+    \item \textbf{Creative Agent (Inspire):} Routes to Gemini 2.0 Flash or Ollama/Mistral. Generates three domain-appropriate divergent ideas (e.g., plot twists for Story, business models for Business).
+    \item \textbf{Reasoning Agent (Synthesize):} Routes to Gemini or Ollama. Merges 2--3 nodes using domain-specific synthesis logic (e.g., story synopsis with clear structure, or UVP/elevator pitch for Business).
+    \item \textbf{Linguistic Agent (Refine Title):} Routes to Ollama (local/fast) or Gemini. Generates concise 8-word titles.
+    \item \textbf{Critical Agent (Critique):} Routes to Gemini or Ollama. Identifies 3 domain-specific flaws (e.g., plot holes for Story, market risks for Business).
+\end{itemize}
+
+Each endpoint logs its routing decision to demonstrate active orchestration and accepts a \texttt{domain} parameter to select the appropriate persona from the PROMPTS library.
+
+\textbf{Implementation Details:}
+\begin{itemize}
+    \item \textbf{Persona Library:} Server-side PROMPTS object maps domains to specialized system instructions for each agent type.
+    \item \textbf{User Control:} Dropdown selector (\texttt{domain-select}) in UI allows users to switch creative domains mid-session; all subsequent AI calls use the selected persona.
+    \item \textbf{API Endpoints:} Four AI-powered endpoints plus CRUD operations. All endpoints enforce rate limits (10 AI requests/minute per IP) and log orchestration decisions.
+    \item \textbf{Graph Interface:} Interactive vis-network visualization with color-coded branches (blue=original, green=user, red=critique, purple=synthesis, orange=refined).
+    \item \textbf{Export System:} JSON (full structure), Markdown (hierarchical outline), CSV (tabular data), PNG image (canvas download for presentations).
+    \item \textbf{Persistence:} SQLite with WAL, localStorage for session state, multer-based JSON import with validation.
+\end{itemize}
+
+\section{Example Outputs}
+% d. Example Outputs
+
+% i. Provide some examples of the output of your system.
+	extit{Brief samples illustrating capability boundaries:}
+\begin{itemize}
+    \item \textbf{Inspire (input: ``Archaeologist finds an impossible map''):}
+    1) A map that redraws itself daily, revealing a moving city. 2) The map is a prison for a sentient cartographer begging release. 3) The map predicts disasters; following it averts one but causes another.
+    \item \textbf{Synthesize (inputs: time-loop lighthouse; unreliable narrator radio logs):} ``A lone keeper in a storm-wracked lighthouse broadcasts nightly logs, unsure which cycles are real. Each retelling edits the past, and the beam rewrites the shoreline to match.''
+    \item \textbf{Refine Title (input: 3-paragraph node on shifting coastlines):} ``Shoreline That Remembers'' (demonstrates concise titling).
+\end{itemize}
+
+% Example of how to insert an image:
+% \begin{figure}[h]
+%     \centering
+%     \includegraphics[width=0.8\textwidth]{example_output.png}
+%     \caption{An example output generated by the system.}
+%     \label{fig:example1}
+% \end{figure}
+
+\section{Reflection and Future Work}
+% e. Reflection and Future Work
+
+\subsection{Reflection}
+% i. Conclude your report with a reflection on what worked and what didn’t.
+\begin{itemize}
+    \item \textbf{Achievements:} Non-linear graph UI keeps alternatives visible; inspire/synthesize loop accelerates divergence/convergence; auto-title improves readability; import/export and SQLite storage make sessions recoverable; rate limits and logging stabilize API use.
+    \item \textbf{Limitations:} Quality depends on chosen provider; no semantic clustering or novelty scoring yet; UI is desktop-first; no real-time collaboration; limited evaluation sample size.
+    \item \textbf{Retrospective:} Would add early lightweight embedding-based similarity checks to reduce duplicate branches; design mobile-first layout sooner; script reproducible prompt baselines for evaluations.
+\end{itemize}
+
+\subsection{Future Directions}
+% ii. Identify some future directions for your project.
+\begin{itemize}
+    \item \textbf{Extensions:} Add embedding-based clustering and novelty flags; genre-specific prompt presets; optional ambient mode that surfaces periodic “what-if” branches.
+    \item \textbf{Improvements:} Multi-user collaboration with optimistic locking; richer exports (OPML/Markdown with backlinks); mobile-friendly layout; pluggable evaluator to score diversity/clarity automatically.
+\end{itemize}
+
+\end{document}

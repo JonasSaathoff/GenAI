@@ -146,6 +146,7 @@ function addNodeToTree(node) {
 }
 
 // UI bindings
+const domainSelect = document.getElementById('domain-select');
 const newIdeaInput = document.getElementById('new-idea-input');
 const btnNewIdea = document.getElementById('btn-new-idea');
 const btnInspire = document.getElementById('btn-inspire');
@@ -278,15 +279,40 @@ btnInspire.addEventListener('click', async () => {
   if (!node) return;
   btnInspire.disabled = true;
   try {
-    const resp = await fetch('/api/inspire', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: node.content }) });
+    const resp = await fetch('/api/inspire', { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify({ 
+        content: node.content,
+        domain: domainSelect.value
+      }) 
+    });
     const json = await resp.json();
     const raw = (json.raw || '').trim();
     const parts = parseNumberedList(raw);
+    
+    // Get parent position to spread children horizontally
+    const parentPos = network.getPositions([node.id])[node.id];
+    const spacing = 450; // Increased horizontal spacing between sibling nodes
+    const totalWidth = (parts.length - 1) * spacing;
+    const startX = parentPos.x - totalWidth / 2;
+    
     parts.forEach((p, idx) => {
       const id = crypto.randomUUID();
       const level = getNodeLevel(node.id) + 1;
       const n = { ...makeNode({ id, title: p, content: p, parentId: node.id, branchColor: 'red' }), level };
-      addNodeToTree(n);
+      ideaTree.push(n);
+      // Add node with explicit x position to prevent overlap (not fixed, so user can move them)
+      nodes.add({ 
+        id: n.id, 
+        label: n.title, 
+        title: n.content, 
+        color: { background: branchColorToHex(n.branchColor), border: '#bfc7d6' }, 
+        borderWidth: 1, 
+        level: n.level,
+        x: startX + (idx * spacing)
+      });
+      if (n.parentId) edges.add({ from: n.parentId, to: n.id, arrows: 'to' });
     });
   } catch (err) {
     console.error(err);
@@ -309,7 +335,14 @@ btnSynthesize.addEventListener('click', async () => {
   const concepts = selectedIds.slice(0, 3).map(id => ideaTree.find(n => n.id === id).content);
   btnSynthesize.disabled = true;
   try {
-    const resp = await fetch('/api/synthesize', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ concepts }) });
+    const resp = await fetch('/api/synthesize', { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify({ 
+        concepts,
+        domain: domainSelect.value
+      }) 
+    });
     const json = await resp.json();
     const synthesized = json.synthesized || 'Synthesized idea failed';
     const id = crypto.randomUUID();
@@ -327,6 +360,68 @@ btnSynthesize.addEventListener('click', async () => {
   } finally {
     btnSynthesize.disabled = false;
     // Auto-save
+    if (currentProjectId) {
+      saveCurrentProject().catch(err => console.error('Auto-save error:', err));
+    }
+  }
+});
+
+// ---------------------------------------------------------
+// NEW: Critique Agent Handler (Critical/Filter Agent)
+// ---------------------------------------------------------
+const btnCritique = document.getElementById('btn-critique');
+
+btnCritique.addEventListener('click', async () => {
+  const selectedIds = Array.from(selectionSet);
+  if (selectedIds.length !== 1) {
+    alert('Select exactly one node to critique.');
+    return;
+  }
+  const nodeId = selectedIds[0];
+  const node = ideaTree.find(n => n.id === nodeId);
+  if (!node) return;
+
+  btnCritique.disabled = true;
+  const originalText = btnCritique.innerText;
+  btnCritique.innerText = 'Critiquing...';
+
+  try {
+    const resp = await fetch('/api/critique', { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify({ 
+        content: node.content,
+        domain: domainSelect.value
+      }) 
+    });
+    const json = await resp.json();
+    
+    // Create a "Constraint" node for each critique point
+    const points = json.critique || [];
+    points.forEach(point => {
+      const id = crypto.randomUUID();
+      const level = getNodeLevel(node.id) + 1;
+      // Use red color and warning emoji to indicate this is a critique
+      const n = { 
+        ...makeNode({ 
+          id, 
+          title: '⚠️ Critique', 
+          content: point, 
+          parentId: node.id, 
+          branchColor: 'red'
+        }), 
+        level 
+      };
+      addNodeToTree(n);
+    });
+    
+    try { network.fit({ animation: true }); } catch {}
+  } catch (err) {
+    console.error(err);
+    alert('Critique failed: ' + (err.message || err));
+  } finally {
+    btnCritique.disabled = false;
+    btnCritique.innerText = originalText;
     if (currentProjectId) {
       saveCurrentProject().catch(err => console.error('Auto-save error:', err));
     }
@@ -623,6 +718,37 @@ btnExportCSV.addEventListener('click', () => {
     return;
   }
   window.location.href = `/api/export/${currentProjectId}/csv`;
+});
+
+// ---------------------------------------------------------
+// NEW: Export to PNG Image (The "Wow" Factor)
+// ---------------------------------------------------------
+const btnExportImg = document.getElementById('btn-export-img');
+
+btnExportImg.addEventListener('click', () => {
+  // Fit the graph so everything is visible before taking the picture
+  network.fit({ 
+    animation: false,
+    scale: 1.0 
+  });
+
+  // Wait slightly for the render to finish, then capture canvas
+  setTimeout(() => {
+    const canvas = document.querySelector('#mynetwork canvas');
+    if (!canvas) {
+      alert('Unable to find graph canvas for export.');
+      return;
+    }
+    
+    // Create a dummy link to trigger download
+    const link = document.createElement('a');
+    const projectName = currentProjectName || 'ideaforge';
+    link.download = `${projectName.replace(/[^a-z0-9]/gi, '_')}_${Date.now()}.png`;
+    link.href = canvas.toDataURL('image/png');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }, 500);
 });
 
 // Import handler
