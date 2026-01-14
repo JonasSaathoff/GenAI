@@ -80,7 +80,15 @@ function rebuildEdges() {
 
 rebuildEdges();
 
-const container = document.getElementById('mynetwork');
+// Ensure DOM is ready before initializing network
+function initNetwork() {
+  const container = document.getElementById('mynetwork');
+  if (!container) {
+    console.error('ERROR: #mynetwork container not found in DOM');
+    return;
+  }
+  console.log('✓ Network container found, initializing vis-network...');
+  
 const data = { nodes, edges };
 // ---------------------------------------------------------
 // 2. IMPROVED LAYOUT & VISUALS
@@ -148,7 +156,17 @@ const options = {
     navigationButtons: true 
   }
 };
-const network = new vis.Network(container, data, options);
+  const network = new vis.Network(container, data, options);
+  console.log('✓ vis-network initialized successfully');
+  return network;
+}
+
+// Call when DOM is ready (script is at end of body, so DOM should be ready)
+const network = initNetwork();
+
+if (!network) {
+  console.error('FATAL: Failed to initialize network. Check console for errors.');
+}
 
 // Maintain an explicit selection set so users can click to toggle selection (no Ctrl required)
 const selectionSet = new Set();
@@ -164,19 +182,21 @@ function updateNodeSelectionVisual(id, isSelected) {
   }
 }
 
-network.on('click', (params) => {
-  // If a node was clicked, toggle its selection state
-  if (params.nodes && params.nodes.length) {
-    const id = params.nodes[0];
-    if (selectionSet.has(id)) {
-      selectionSet.delete(id);
-      updateNodeSelectionVisual(id, false);
-    } else {
-      selectionSet.add(id);
-      updateNodeSelectionVisual(id, true);
+if (network) {
+  network.on('click', (params) => {
+    // If a node was clicked, toggle its selection state
+    if (params.nodes && params.nodes.length) {
+      const id = params.nodes[0];
+      if (selectionSet.has(id)) {
+        selectionSet.delete(id);
+        updateNodeSelectionVisual(id, false);
+      } else {
+        selectionSet.add(id);
+        updateNodeSelectionVisual(id, true);
+      }
     }
-  }
-});
+  });
+}
 
 function getNodeLevel(id) {
   if (!id) return 0;
@@ -308,7 +328,7 @@ btnNewIdea.addEventListener('click', () => {
     const node = { ...makeNode({ id, title: text, content: text, parentId, branchColor: 'green' }), level };
     addNodeToTree(node);
     // Re-fit view to include new node
-    try { network.fit({ animation: true }); } catch {}
+    try { if (network) network.fit({ animation: true }); } catch {}
     // Auto-save if project exists
     if (currentProjectId) {
       saveCurrentProject().catch(err => console.error('Auto-save error:', err));
@@ -469,7 +489,7 @@ btnCritique.addEventListener('click', async () => {
       addNodeToTree(n);
     });
     
-    try { network.fit({ animation: true }); } catch {}
+    try { if (network) network.fit({ animation: true }); } catch {}
   } catch (err) {
     console.error(err);
     alert('Critique failed: ' + (err.message || err));
@@ -615,7 +635,7 @@ async function loadProjectFromModal(projectId) {
     rebuildEdges();
     selectionSet.clear();
     
-    try { network.fit({ animation: true }); } catch {}
+    try { if (network) network.fit({ animation: true }); } catch {}
     loadModal.style.display = 'none';
     alert(`Project "${project.name}" loaded!`);
   } catch (err) {
@@ -678,7 +698,7 @@ function newProject() {
   rebuildEdges();
   selectionSet.clear();
   
-  try { network.fit({ animation: true }); } catch {}
+  try { if (network) network.fit({ animation: true }); } catch {}
   alert('New project started!');
 }
 
@@ -781,7 +801,7 @@ const btnExportImg = document.getElementById('btn-export-img');
 
 btnExportImg.addEventListener('click', () => {
   // Fit the graph so everything is visible before taking the picture
-  network.fit({ 
+  if (network) network.fit({ 
     animation: false,
     scale: 1.0 
   });
@@ -854,7 +874,7 @@ fileImport.addEventListener('change', async (e) => {
     rebuildEdges();
     selectionSet.clear();
     
-    try { network.fit({ animation: true }); } catch {}
+    try { if (network) network.fit({ animation: true }); } catch {}
     alert(`Project "${result.name}" imported successfully!`);
   } catch (err) {
     console.error('Import error:', err);
