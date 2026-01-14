@@ -41,15 +41,24 @@ function makeNode({ id, title, content, parentId = null, branchColor = 'blue' })
 const rootId = crypto.randomUUID();
 ideaTree.push({ ...makeNode({ id: rootId, title: 'Starter Idea', content: 'Initial Idea: A smart gardening app.', parentId: null, branchColor: 'blue' }), level: 0 });
 
-// vis-network setup
+// ---------------------------------------------------------
+// 1. IMPROVED COLOR PALETTE (Modern UI: Slate, Emerald, Indigo, Rose)
+// ---------------------------------------------------------
 function branchColorToHex(c) {
   switch ((c || '').toLowerCase()) {
-    case 'blue': return '#0ea5a3';
-    case 'red': return '#ef4444';
-    case 'green': return '#10b981';
-    case 'purple': return '#7c3aed';
-    case 'orange': return '#fb923c';
-    default: return '#9ca3af';
+    // User Idea -> Emerald (Fresh, Positive)
+    case 'green': return '#059669'; 
+    // AI Inspire -> Violet (Creative, Magic) - Changed from Red
+    case 'red': return '#7c3aed'; 
+    // Critique -> Rose (Warning, Alert)
+    case 'critique': return '#e11d48'; 
+    // Synthesize -> Blue (Structural, calming)
+    case 'purple': return '#2563eb'; 
+    // Refine -> Amber (Highlight)
+    case 'orange': return '#d97706'; 
+    // Default/Root -> Slate (Neutral)
+    case 'blue': return '#475569'; 
+    default: return '#475569';
   }
 }
 
@@ -57,8 +66,7 @@ const nodes = new vis.DataSet(ideaTree.map(n => ({
   id: n.id,
   label: n.label,
   title: n.content,
-  color: { background: branchColorToHex(n.branchColor), border: '#bfc7d6' },
-  borderWidth: 1,
+  color: { background: branchColorToHex(n.branchColor) },
   level: typeof n.level === 'number' ? n.level : undefined
 })));
 const edges = new vis.DataSet([]);
@@ -74,34 +82,71 @@ rebuildEdges();
 
 const container = document.getElementById('mynetwork');
 const data = { nodes, edges };
+// ---------------------------------------------------------
+// 2. IMPROVED LAYOUT & VISUALS
+// ---------------------------------------------------------
 const options = {
   layout: {
     hierarchical: {
       enabled: true,
-      direction: 'UD',
+      direction: 'UD', // Up-Down
       sortMethod: 'directed',
-      levelSeparation: 220,
-      nodeSpacing: 200,
-      treeSpacing: 280
+      
+      // CRITICAL FIX: nodeSpacing must be larger than widthConstraint (400px)
+      levelSeparation: 250, // Vertical space between rows
+      nodeSpacing: 450,     // Horizontal space (prevents overlap)
+      treeSpacing: 460,     // Space between different trees
+      
+      blockShifting: true,
+      edgeMinimization: true,
+      parentCentralization: true
     }
   },
   nodes: {
     shape: 'box',
-    margin: 8,
+    margin: 12, // More breathing room inside the box
     widthConstraint: { maximum: 400 },
-    font: { size: 14 }
-  },
-  edges: {
-    smooth: {
-      type: 'cubicBezier',
-      roundness: 0.5
+    font: { 
+      size: 16, 
+      face: 'Inter, system-ui, sans-serif',
+      color: '#ffffff', // White text for better contrast
+      multi: 'html' 
     },
-    arrows: {
-      to: { enabled: true }
+    borderWidth: 0, // Cleaner look without heavy borders
+    shadow: {
+      enabled: true,
+      color: 'rgba(0,0,0,0.2)',
+      size: 10,
+      x: 5,
+      y: 5
+    },
+    shapeProperties: {
+      borderRadius: 8 // Soft rounded corners
     }
   },
-  physics: false,
-  interaction: { multiselect: true }
+  edges: {
+    color: {
+      color: '#cbd5e1',
+      highlight: '#94a3b8'
+    },
+    width: 2,
+    smooth: {
+      type: 'cubicBezier',
+      forceDirection: 'vertical',
+      roundness: 0.6
+    },
+    arrows: {
+      to: { enabled: true, scaleFactor: 1.2 }
+    }
+  },
+  physics: {
+    enabled: false // Keep false for hierarchical layouts to stay stable
+  },
+  interaction: { 
+    multiselect: true,
+    hover: true,
+    navigationButtons: true 
+  }
 };
 const network = new vis.Network(container, data, options);
 
@@ -141,7 +186,13 @@ function getNodeLevel(id) {
 
 function addNodeToTree(node) {
   ideaTree.push(node);
-  nodes.add({ id: node.id, label: node.title, title: node.content, color: { background: branchColorToHex(node.branchColor), border: '#bfc7d6' }, borderWidth: 1, level: node.level });
+  nodes.add({ 
+    id: node.id, 
+    label: node.title, 
+    title: node.content, 
+    color: { background: branchColorToHex(node.branchColor) }, 
+    level: node.level 
+  });
   if (node.parentId) edges.add({ from: node.parentId, to: node.id, arrows: 'to' });
 }
 
@@ -291,27 +342,23 @@ btnInspire.addEventListener('click', async () => {
     const raw = (json.raw || '').trim();
     const parts = parseNumberedList(raw);
     
-    // Get parent position to spread children horizontally
-    const parentPos = network.getPositions([node.id])[node.id];
-    const spacing = 450; // Increased horizontal spacing between sibling nodes
-    const totalWidth = (parts.length - 1) * spacing;
-    const startX = parentPos.x - totalWidth / 2;
-    
     parts.forEach((p, idx) => {
       const id = crypto.randomUUID();
       const level = getNodeLevel(node.id) + 1;
+      
+      // Changed branchColor from 'red' to 'red' (which now maps to Violet in our palette)
       const n = { ...makeNode({ id, title: p, content: p, parentId: node.id, branchColor: 'red' }), level };
       ideaTree.push(n);
-      // Add node with explicit x position to prevent overlap (not fixed, so user can move them)
+      
       nodes.add({ 
         id: n.id, 
         label: n.title, 
         title: n.content, 
-        color: { background: branchColorToHex(n.branchColor), border: '#bfc7d6' }, 
-        borderWidth: 1, 
-        level: n.level,
-        x: startX + (idx * spacing)
+        color: { background: branchColorToHex(n.branchColor) }, // Just set background
+        level: n.level
+        // REMOVED: x position - Let the auto-layout handle spacing
       });
+      
       if (n.parentId) edges.add({ from: n.parentId, to: n.id, arrows: 'to' });
     });
   } catch (err) {
