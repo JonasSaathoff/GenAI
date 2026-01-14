@@ -448,12 +448,19 @@ btnCritique.addEventListener('click', async () => {
     points.forEach(point => {
       const id = crypto.randomUUID();
       const level = getNodeLevel(node.id) + 1;
+      // Strip markdown formatting (**, __, etc) for clean display
+      const cleanedPoint = point
+        .replace(/\*\*(.*?)\*\*/g, '$1')  // Remove **bold**
+        .replace(/__(.+?)__/g, '$1')       // Remove __bold__
+        .replace(/\*(.*?)\*/g, '$1')       // Remove *italic*
+        .replace(/_(.*?)_/g, '$1');        // Remove _italic_
+      
       // Use red color and warning emoji to indicate this is a critique
       const n = { 
         ...makeNode({ 
           id, 
           title: '⚠️ Critique', 
-          content: point, 
+          content: cleanedPoint, 
           parentId: node.id, 
           branchColor: 'red'
         }), 
