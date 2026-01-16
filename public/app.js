@@ -112,10 +112,10 @@ const options = {
       direction: 'UD', // Up-Down
       sortMethod: 'directed',
       
-      // CRITICAL FIX: nodeSpacing must be larger than widthConstraint (400px)
+      // CRITICAL FIX: nodeSpacing must be larger than widthConstraint (550px)
       levelSeparation: 250, // Vertical space between rows
-      nodeSpacing: 450,     // Horizontal space (prevents overlap)
-      treeSpacing: 460,     // Space between different trees
+      nodeSpacing: 600,     // Horizontal space (prevents overlap)
+      treeSpacing: 620,     // Space between different trees
       
       blockShifting: true,
       edgeMinimization: true,
@@ -124,8 +124,9 @@ const options = {
   },
   nodes: {
     shape: 'box',
-    margin: 12, // More breathing room inside the box
-    widthConstraint: { maximum: 400 },
+    margin: 16, // More breathing room inside the box
+    widthConstraint: { maximum: 550, minimum: 300 },
+    heightConstraint: { minimum: 80 },
     font: { 
       size: 16, 
       face: 'Inter, system-ui, sans-serif',
@@ -292,7 +293,14 @@ function updateNodeInTree(id, newTitle, newContent) {
     n.title = newTitle;
     n.content = wrapText(newContent, 80);
     const tooltip = n.content.split('\n').slice(0, 4).join('\n');
-    nodes.update({ id, label: newTitle, title: tooltip });
+    // Update with wrapped text for label to maintain consistency
+    const displayLabel = wrapText(newTitle, 50);
+    nodes.update({ 
+      id, 
+      label: displayLabel, 
+      title: tooltip,
+      content: n.content
+    });
   }
 }
 
@@ -372,22 +380,23 @@ btnInspire.addEventListener('click', async () => {
       }) 
     });
     const json = await resp.json();
-    const raw = (json.raw || '').trim();
-    const parts = parseNumberedList(raw);
     
-    parts.forEach((p, idx) => {
+    // Use the structured 'ideas' array and display full text
+    const ideas = json.ideas || [];
+    
+    ideas.forEach((idea) => {
       const id = crypto.randomUUID();
       const level = getNodeLevel(node.id) + 1;
       
-      // Changed branchColor from 'red' to 'red' (which now maps to Violet in our palette)
-      const n = { ...makeNode({ id, title: p, content: p, parentId: node.id, branchColor: 'red' }), level };
+      // Use the full text for both title and content
+      const n = { ...makeNode({ id, title: idea.text, content: idea.text, parentId: node.id, branchColor: 'red' }), level };
       ideaTree.push(n);
       
       nodes.add({ 
         id: n.id, 
-        label: n.title, 
-        title: n.content, 
-        color: { background: branchColorToHex(n.branchColor) }, // Just set background
+        label: idea.text,  // Full text displayed on node
+        title: idea.text,  // Full text for tooltip
+        color: { background: branchColorToHex(n.branchColor) },
         level: n.level
         // REMOVED: x position - Let the auto-layout handle spacing
       });
@@ -724,6 +733,10 @@ editSave.addEventListener('click', () => {
   }
   updateNodeInTree(editingNodeId, newTitle, newContent);
   hideEditModal();
+  // Force network redraw to display changes
+  if (network) {
+    try { network.redraw(); } catch (e) { console.error('Network redraw error:', e); }
+  }
   // Auto-save
   if (currentProjectId) {
     saveCurrentProject().catch(err => console.error('Auto-save error:', err));

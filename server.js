@@ -141,13 +141,13 @@ const PROMPTS = {
     refine: "You are a concise copywriter. Produce an evocative title of at most 8 words that captures the essence of the content. Respond with only the title, no quotes."
   },
   story: {
-    inspire: "You are a plot consultant. Generate exactly three dramatic plot twists or character conflicts based on this concept. Focus on narrative tension. Respond only as a numbered list.",
+    inspire: "You are a plot consultant. Generate exactly three COMPLETELY DIFFERENT and DIVERGENT plot directions or character arcs based on this concept. Each idea must be a distinct alternative path, NOT a continuation of the others. Focus on narrative tension and make them mutually exclusive. Respond only as a numbered list.",
     synthesize: "You are a master editor. Merge these plot points into a single, cohesive story synopsis (4-6 sentences). Ensure a clear beginning, middle, and end.",
     critique: "You are a literary critic. Identify exactly 3 plot holes, weak character motivations, or narrative clichés in this concept.",
     refine: "You are a novelist. Create a compelling chapter title or story hook (max 8 words) that captures the dramatic essence."
   },
   business: {
-    inspire: "You are a disruptive innovator. Generate exactly three unique business models or value propositions based on this sector. Focus on scalability and market gaps. Respond only as a numbered list.",
+    inspire: "You are a disruptive innovator. Generate exactly three COMPLETELY DIFFERENT and DIVERGENT business models or value propositions based on this sector. Each idea must be a distinct alternative approach, NOT variations of the same model. Focus on scalability and market gaps. Make them mutually exclusive. Respond only as a numbered list.",
     synthesize: "You are a product manager. Fuse these features into a single Unique Value Proposition (UVP) or elevator pitch (4-6 sentences). Focus on customer benefit.",
     critique: "You are a venture capitalist. Identify exactly 3 market risks, monetization challenges, or competitive threats in this business concept.",
     refine: "You are a marketing strategist. Create a punchy tagline or value proposition (max 8 words) that sells the idea."
@@ -316,8 +316,8 @@ async function callOllama(promptText, maxTokens = 200, model = OLLAMA_MODEL) {
     prompt: promptText,
     stream: false,
     options: {
-      num_predict: Math.min(maxTokens, 200),
-      temperature: 0.6
+      num_predict: maxTokens,  // Remove the Math.min cap to allow full token limit
+      temperature: 0.7  // Slightly higher temperature for more creative output
     }
   };
 
@@ -361,20 +361,20 @@ app.post('/api/inspire', async (req, res) => {
     
     let output;
     
-    // ORCHESTRATION LOGIC: Prioritize Ollama (Local) -> Gemini (Backup) -> OpenAI
+    // TASK-SPECIFIC ORCHESTRATION: Inspire uses Ollama (local, fast creative agent)
+    // Fallback order: Ollama -> Gemini -> OpenAI
     try {
       if (process.env.OLLAMA_URL) {
-        logger.info('Orchestrator: Routing "inspire" to Ollama (Creative Agent)');
-        // CHANGE 160 -> 400
-        output = await callOllama(prompt, 400, OLLAMA_MODEL); 
+        logger.info('Orchestrator: Routing "inspire" to Ollama (Local Creative Agent - PREFERRED)');
+        output = await callOllama(prompt, 1000, OLLAMA_MODEL); 
       } else if (GEMINI_API_KEY) {
-        logger.info('Orchestrator: Routing "inspire" to Gemini (Backup Creative Agent)');
-        // CHANGE 160 -> 400
-        output = await callGemini(prompt, 400, process.env.GEMINI_MODEL || DEFAULT_MODEL); 
+        logger.info('Orchestrator: Routing "inspire" to Gemini (Fallback Creative Agent)');
+        output = await callGemini(prompt, 1000, process.env.GEMINI_MODEL || DEFAULT_MODEL); 
+      } else if (OPENAI_API_KEY) {
+        logger.info('Orchestrator: Routing "inspire" to OpenAI (Final Fallback)');
+        output = await callOpenAI(systemInstr, `Concept: ${content}\n\nRespond format strictly:\n1. Idea one (<= 2 sentences)\n2. Idea two (<= 2 sentences)\n3. Idea three (<= 2 sentences)`, 1000); 
       } else {
-        logger.info('Orchestrator: Fallback for "inspire" to OpenAI');
-        // CHANGE 160 -> 400
-        output = await callOpenAI(systemInstr, `Concept: ${content}\n\nRespond format strictly:\n1. Idea one (<= 2 sentences)\n2. Idea two (<= 2 sentences)\n3. Idea three (<= 2 sentences)`, 400); 
+        throw new Error('No AI provider available');
       }
     } catch (apiErr) {
       logger.error('AI API call failed', { error: apiErr.message, content: content.slice(0, 50) });
@@ -449,17 +449,30 @@ app.post('/api/synthesize', async (req, res) => {
     
     let output;
     
-    // ORCHESTRATION LOGIC: Prioritize Ollama (Local) -> Gemini (Backup) -> OpenAI
+    // TASK-SPECIFIC ORCHESTRATION: Synthesize uses Gemini (cloud reasoning agent - PREFERRED)
+    // Auto-fallback to Ollama if Gemini fails (no tokens/API issues)
     try {
-      if (process.env.OLLAMA_URL) {
-        logger.info('Orchestrator: Routing "synthesize" to Ollama (Reasoning Agent)');
+      if (GEMINI_API_KEY) {
+        try {
+          logger.info('Orchestrator: Routing "synthesize" to Gemini (Cloud Reasoning Agent - PREFERRED)');
+          output = await callGemini(prompt, 200, process.env.GEMINI_MODEL || DEFAULT_MODEL);
+        } catch (geminiErr) {
+          logger.warn('Gemini failed, auto-switching to Ollama', { error: geminiErr.message });
+          if (process.env.OLLAMA_URL) {
+            logger.info('Orchestrator: Auto-fallback "synthesize" to Ollama (Local Reasoning Agent)');
+            output = await callOllama(prompt, 200, OLLAMA_MODEL);
+          } else {
+            throw geminiErr; // Re-throw if no Ollama available
+          }
+        }
+      } else if (process.env.OLLAMA_URL) {
+        logger.info('Orchestrator: Routing "synthesize" to Ollama (No Gemini key available)');
         output = await callOllama(prompt, 200, OLLAMA_MODEL);
-      } else if (GEMINI_API_KEY) {
-        logger.info('Orchestrator: Routing "synthesize" to Gemini (Backup Reasoning Agent)');
-        output = await callGemini(prompt, 200, process.env.GEMINI_MODEL || DEFAULT_MODEL);
-      } else {
-        logger.info('Orchestrator: Fallback for "synthesize" to OpenAI');
+      } else if (OPENAI_API_KEY) {
+        logger.info('Orchestrator: Routing "synthesize" to OpenAI (Final Fallback)');
         output = await callOpenAI(systemInstr, `${concepts.map((c, i) => `${i + 1}. ${c}`).join('\n')}`, 200);
+      } else {
+        throw new Error('No AI provider available');
       }
     } catch (apiErr) {
       logger.error('AI API call failed on synthesize', { error: apiErr.message });
@@ -497,17 +510,30 @@ app.post('/api/critique', async (req, res) => {
 
     let output;
 
-    // ORCHESTRATION LOGIC: Prioritize Ollama (Local) -> Gemini (Backup) -> OpenAI
+    // TASK-SPECIFIC ORCHESTRATION: Critique uses Gemini (cloud critical reasoning - PREFERRED)
+    // Auto-fallback to Ollama if Gemini fails (no tokens/API issues)
     try {
-      if (process.env.OLLAMA_URL) {
-        logger.info('Orchestrator: Routing "critique" to Ollama (Critical Agent)');
+      if (GEMINI_API_KEY) {
+        try {
+          logger.info('Orchestrator: Routing "critique" to Gemini (Cloud Critical Agent - PREFERRED)');
+          output = await callGemini(prompt, 200, process.env.GEMINI_MODEL || DEFAULT_MODEL);
+        } catch (geminiErr) {
+          logger.warn('Gemini failed, auto-switching to Ollama', { error: geminiErr.message });
+          if (process.env.OLLAMA_URL) {
+            logger.info('Orchestrator: Auto-fallback "critique" to Ollama (Local Critical Agent)');
+            output = await callOllama(prompt, 200, OLLAMA_MODEL);
+          } else {
+            throw geminiErr; // Re-throw if no Ollama available
+          }
+        }
+      } else if (process.env.OLLAMA_URL) {
+        logger.info('Orchestrator: Routing "critique" to Ollama (No Gemini key available)');
         output = await callOllama(prompt, 200, OLLAMA_MODEL);
-      } else if (GEMINI_API_KEY) {
-        logger.info('Orchestrator: Routing "critique" to Gemini (Backup Critical Agent)');
-        output = await callGemini(prompt, 200, process.env.GEMINI_MODEL || DEFAULT_MODEL);
-      } else {
-        logger.info('Orchestrator: Fallback for "critique" to OpenAI');
+      } else if (OPENAI_API_KEY) {
+        logger.info('Orchestrator: Routing "critique" to OpenAI (Final Fallback)');
         output = await callOpenAI(systemInstr, `Concept:\n${content}\n\nOutput format:\n1. [Flaw]\n2. [Flaw]\n3. [Flaw]`, 200);
+      } else {
+        throw new Error('No AI provider available');
       }
     } catch (apiErr) {
       logger.error('Critique API error', { error: apiErr.message });
@@ -570,17 +596,20 @@ app.post('/api/refine-title', async (req, res) => {
     
     let output;
     
-    // ORCHESTRATION LOGIC: Prioritize Ollama (Local/Fast) -> Gemini -> OpenAI
+    // TASK-SPECIFIC ORCHESTRATION: Refine uses Ollama (local, fast linguistic agent - PREFERRED)
+    // Fallback order: Ollama -> Gemini -> OpenAI
     try {
       if (process.env.OLLAMA_URL) {
-        logger.info('Orchestrator: Routing "refine-title" to Ollama (Local Linguistic Agent)');
+        logger.info('Orchestrator: Routing "refine-title" to Ollama (Local Linguistic Agent - PREFERRED)');
         output = await callOllama(prompt, 40, OLLAMA_MODEL);
       } else if (GEMINI_API_KEY) {
-        logger.info('Orchestrator: Routing "refine-title" to Gemini (Linguistic Agent)');
+        logger.info('Orchestrator: Routing "refine-title" to Gemini (Fallback Linguistic Agent)');
         output = await callGemini(prompt, 30, process.env.GEMINI_MODEL || DEFAULT_MODEL);
-      } else {
-        logger.info('Orchestrator: Fallback for "refine-title" to OpenAI');
+      } else if (OPENAI_API_KEY) {
+        logger.info('Orchestrator: Routing "refine-title" to OpenAI (Final Fallback)');
         output = await callOpenAI(systemInstr, `Long-form idea:\n${content}\n\nOutput: title only (<= 8 words).`, 40);
+      } else {
+        throw new Error('No AI provider available');
       }
     } catch (apiErr) {
       logger.error('AI API call failed on refine-title', { error: apiErr.message });
