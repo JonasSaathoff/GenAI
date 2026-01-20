@@ -36,6 +36,18 @@ function makeNode({ id, title, content, parentId = null, branchColor = 'blue' })
   return { id, label: title, title: tooltip, content: formatted, parentId, branchColor, timestamp: Date.now() };
 }
 
+// NEW: Helper to get ancestor context (RAG-lite)
+function getContextFromAncestors(nodeId) {
+  const contextChain = [];
+  let curr = ideaTree.find(n => n.id === nodeId);
+  while (curr) {
+    contextChain.unshift(curr.content); // Add to front
+    curr = curr.parentId ? ideaTree.find(n => n.id === curr.parentId) : null;
+  }
+  // Return the chain as a formatted string
+  return contextChain.join('\n\n--- Next Idea in Chain ---\n\n');
+}
+
 // ---------------------------------------------------------
 // Loading State Helper
 // ---------------------------------------------------------
@@ -231,6 +243,7 @@ function addNodeToTree(node) {
 
 // UI bindings
 const domainSelect = document.getElementById('domain-select');
+const customPersonaInput = document.getElementById('custom-persona');
 const newIdeaInput = document.getElementById('new-idea-input');
 const btnNewIdea = document.getElementById('btn-new-idea');
 const btnInspire = document.getElementById('btn-inspire');
@@ -376,7 +389,9 @@ btnInspire.addEventListener('click', async () => {
       headers: { 'Content-Type': 'application/json' }, 
       body: JSON.stringify({ 
         content: node.content,
-        domain: domainSelect.value
+        context: getContextFromAncestors(node.id), // NEW: Send full ancestry
+        domain: domainSelect.value,
+        customRole: customPersonaInput && customPersonaInput.value ? customPersonaInput.value.trim() : undefined
       }) 
     });
     const json = await resp.json();
@@ -487,7 +502,9 @@ btnCritique.addEventListener('click', async () => {
       headers: { 'Content-Type': 'application/json' }, 
       body: JSON.stringify({ 
         content: node.content,
-        domain: domainSelect.value
+        context: getContextFromAncestors(node.id), // NEW: Send full ancestry
+        domain: domainSelect.value,
+        customRole: customPersonaInput && customPersonaInput.value ? customPersonaInput.value.trim() : undefined
       }) 
     });
     const json = await resp.json();

@@ -348,7 +348,7 @@ async function callOllama(promptText, maxTokens = 200, model = OLLAMA_MODEL) {
 // ============================================================================
 app.post('/api/inspire', async (req, res) => {
   try {
-    const { content, domain = 'general' } = req.body;
+    const { content, context, domain = 'general', customRole } = req.body;
     if (!content) {
       logger.warn('Inspire request missing content');
       return res.status(400).json({ error: 'Missing content', code: 'MISSING_CONTENT' });
@@ -356,8 +356,12 @@ app.post('/api/inspire', async (req, res) => {
 
     // Select persona based on domain
     const persona = PROMPTS[domain] || PROMPTS.general;
-    const systemInstr = persona.inspire;
-    const prompt = `${systemInstr}\n\nConcept: ${content}\n\nRespond format strictly:\n1. Idea one (<= 2 sentences)\n2. Idea two (<= 2 sentences)\n3. Idea three (<= 2 sentences)`;
+    // If a custom role is provided, build a dynamic system instruction that
+    // injects the role description before the persona template. This keeps the
+    // template's behavior while adapting the role quickly.
+    const systemInstr = customRole ? `You are ${customRole}. ${persona.inspire}` : persona.inspire;
+    const contextBlock = context ? `\n\nCONTEXT (History of this idea):\n${context}` : '';
+    const prompt = `${systemInstr}${contextBlock}\n\nCURRENT CONCEPT: ${content}\n\nRespond format strictly:\n1. Idea one (<= 2 sentences)\n2. Idea two (<= 2 sentences)\n3. Idea three (<= 2 sentences)`;
     
     let output;
     
@@ -510,7 +514,7 @@ app.post('/api/synthesize', async (req, res) => {
 // ============================================================================
 app.post('/api/critique', async (req, res) => {
   try {
-    const { content, domain = 'general' } = req.body;
+    const { content, context, domain = 'general', customRole } = req.body;
     if (!content) {
       logger.warn('Critique request missing content');
       return res.status(400).json({ error: 'Missing content', code: 'MISSING_CONTENT' });
@@ -518,8 +522,9 @@ app.post('/api/critique', async (req, res) => {
 
     // Select persona based on domain
     const persona = PROMPTS[domain] || PROMPTS.general;
-    const systemInstr = persona.critique;
-    const prompt = `${systemInstr}\n\nConcept:\n${content}\n\nOutput format:\n1. [Flaw/Risk]\n2. [Flaw/Risk]\n3. [Flaw/Risk]`;
+    const systemInstr = customRole ? `You are ${customRole}. ${persona.critique}` : persona.critique;
+    const contextBlock = context ? `\n\nCONTEXT (History of this idea):\n${context}` : '';
+    const prompt = `${systemInstr}${contextBlock}\n\nCURRENT CONCEPT:\n${content}\n\nOutput format:\n1. [Flaw/Risk]\n2. [Flaw/Risk]\n3. [Flaw/Risk]`;
 
     let output;
 
