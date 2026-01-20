@@ -221,8 +221,8 @@ function addNodeToTree(node) {
   ideaTree.push(node);
   nodes.add({ 
     id: node.id, 
-    label: node.title, 
-    title: node.content, 
+    label: node.label, 
+    title: node.title, 
     color: { background: branchColorToHex(node.branchColor) }, 
     level: node.level 
   });
@@ -436,14 +436,22 @@ btnSynthesize.addEventListener('click', async () => {
     const json = await resp.json();
     const synthesized = json.synthesized || 'Synthesized idea failed';
     const id = crypto.randomUUID();
-    const title = synthesized.split('\n')[0];
+    // Use the full synthesized text as the label so the node header shows complete content
+    const fullLabel = synthesized;
     const a = ideaTree.find(n => n.id === selectedIds[0]);
     const b = ideaTree.find(n => n.id === selectedIds[1]);
+    // Place the new node below the two merged nodes: set its level one deeper than the deeper node
+    const level = Math.max(getNodeLevel(a && a.id), getNodeLevel(b && b && b.id)) + 1;
+    // Make the first selected node the primary parent (for layout) and add an extra edge from the second
     const parentId = a ? a.id : selectedIds[0];
-    const baseLevel = Math.max(getNodeLevel(a && a.id), getNodeLevel(b && b && b.id));
-    const level = baseLevel; // share level to appear between
-    const node = { ...makeNode({ id, title, content: synthesized, parentId, branchColor: 'purple' }), level };
+    const node = { ...makeNode({ id, title: fullLabel, content: synthesized, parentId, branchColor: 'purple' }), level };
     addNodeToTree(node);
+    // Also link the second selected node to the synthesized node so it visually appears connected to both
+    try {
+      if (b && b.id) edges.add({ from: b.id, to: node.id, arrows: 'to' });
+    } catch (e) {
+      console.error('Failed to add secondary edge for synthesized node', e);
+    }
   } catch (err) {
     console.error(err);
     alert('Synthesize failed: ' + (err.message || err));

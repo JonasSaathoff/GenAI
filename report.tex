@@ -14,13 +14,24 @@
     right=2.5cm
 }
 
-\title{Generative AI Project Report}
-\author{Your Name}
-\date{January 2026}
+\title{IdeaForge - Research Project}
+\author{Niklas Koscholleck
+\\ Sarah Lobis
+\\ Jonas Saathoff \\
+\\
+\vspace{0.5em}
+Group Number 18
+}
+
+\date{}
 
 \begin{document}
 
 \maketitle
+
+\begin{abstract}
+Current Large Language Model (LLM) interfaces predominantly utilize linear chat paradigms, which often fail to support the non-linear, branching nature of complex creative cognition. This report presents \textit{IdeaForge}, a creative support tool that spatializes the ideation process through a node-link interface. By integrating a multi-agent architecture comprising specialized Inspire, Synthesize, and Critique agents, the system facilitates distinct cognitive phases: divergent thinking, convergent synthesis, and evaluative reasoning. We discuss the system's design, which leverages domain-specific personas to adapt AI feedback, and present a proof-of-concept implementation. Qualitative evaluation suggests that spatializing AI interactions reduces cognitive load and mitigates the "blank page" problem, though challenges regarding context management and inference latency remain.
+\end{abstract}
 
 \tableofcontents
 \newpage
@@ -80,64 +91,168 @@ Gingko Writer takes the opposite approach by using a tree-based structure, allow
 \end{itemize}
 
 \subsection{Literature Review}
-Recent studies suggest that creative capabilities of LLMs are often overstated. Chakrabarty et al. (2024) found that without significant human guidance, LLMs struggle with rhetorical complexity and tend to default to familiar patterns, creating a "false promise" of creativity. In response, researchers argue that Creative Support Tools (CSTs) should move beyond raw text generation and instead provide guided scaffolding that keeps the human in control of the creative process (Bushnell \& Harrison, 2025). 
+Recent studies suggest that creative capabilities of LLMs are often overstated. Chakrabarty et al. (2024) \cite{chakrabarty2024} found that without significant human guidance, LLMs struggle with rhetorical complexity and tend to default to familiar patterns, creating a "false promise" of creativity. In response, researchers argue that Creative Support Tools (CSTs) should move beyond raw text generation and instead provide guided scaffolding that keeps the human in control of the creative process (Bushnell \& Harrison, 2025) \cite{bushnell2025}. 
 
-This perspective aligns with the framework of Co-Creative Sense-Making (CCSM). Davis and Rafner (2025) describe creativity as a constant shuttling between "clamped" cognition, focused on execution and "unclamped" cognition, concerned with reflection on structure. Standard chat interfaces often disrupt this cycle by forcing users down a linear path. IdeaForge seeks to restore this dynamic by adopting Nakakoji’s (2006) metaphor of "skis", which are technologies that enable new types of experiences previously impossible for the user. 
+This perspective aligns with the framework of Co-Creative Sense-Making (CCSM). Davis and Rafner (2025) \cite{davis2025} describe creativity as a constant shuttling between "clamped" cognition, focused on execution and "unclamped" cognition, concerned with reflection on structure. Standard chat interfaces often disrupt this cycle by forcing users down a linear path. IdeaForge seeks to restore this dynamic by adopting Nakakoji’s (2006) \cite{nakakoji2006}metaphor of "skis", which are technologies that enable new types of experiences previously impossible for the user. 
 
 \section{Implementation}
-% c. Implementation
 
 \subsection{Project Type}
-% i. What type of project are you trying to implement?
-\textit{Indicate which type of project you implemented:}
-\begin{itemize}
-    \item Proof-of-Concept
-    \item (Re)Implementation of Existing Example
-    \item Autonomous Installation/Model
-\end{itemize}
+This is a \textbf{Proof-of-Concept} co-creative tool that integrates a graph-based UI with hosted LLM APIs. The goal is to externalize ideation structure while keeping inference costs and complexity low.
 
 \subsection{Resources Used}
-% ii. What resources did you use in your implementation?
-\textit{List the pre-existing resources used. Acknowledge the sources and provide a description of how you have modified and extended them.}
+\begin{itemize}
+    \item \textbf{APIs/Models:} Ollama with Mistral model (primary local provider for all endpoints), Gemini 2.0 Flash (cloud fallback), OpenAI GPT-3.5 Turbo (tertiary fallback). No custom training performed; all models used as-is via API inference.
+    \item \textbf{Front-end:} vis-network (v9.1.0) for interactive node-link graph visualization; vanilla JavaScript for CRUD operations, selection management, and multi-format exports (JSON/Markdown/CSV).
+    \item \textbf{Back-end:} Node.js/Express server with better-sqlite3 for project persistence; winston for structured logging; express-rate-limit for API abuse prevention; multer for JSON file imports.
+    \item \textbf{Architecture choices:} Single-process SQLite with Write-Ahead Logging (WAL) for simplicity and concurrent reads; stateless RESTful API endpoints; task-based model routing configured via \texttt{OLLAMA\_URL}, \texttt{GEMINI\_API\_KEY}, and \texttt{OPENAI\_API\_KEY} environment variables.
+\end{itemize}
 
 \subsection{Technical Construction}
-% iii. What did you implement to build your system?
-\textit{Describe the technical details of what you implemented to build your system.}
-
-\section{Example Outputs}
-% d. Example Outputs
-
-% i. Provide some examples of the output of your system.
-\textit{Provide examples of the output. Discuss how these outputs reflect an exploration of your system's capabilities and/or limitations.}
-
-% Example of how to insert an image:
-% \begin{figure}[h]
-%     \centering
-%     \includegraphics[width=0.8\textwidth]{example_output.png}
-%     \caption{An example output generated by the system.}
-%     \label{fig:example1}
-% \end{figure}
-
-\section{Reflection and Future Work}
-% e. Reflection and Future Work
-
-\subsection{Reflection}
-% i. Conclude your report with a reflection on what worked and what didn’t.
-\textit{Reflect on what worked and what didn’t. Consider how your implementation satisfies the aims set out at the beginning.}
+\textbf{Multi-Expert System Architecture:}
+IdeaForge implements a domain-specific multi-agent system where users can switch between specialized "expert personas" via a dropdown selector. Each domain (General Ideation, Short Story/Narrative, Business \& Innovation) uses tailored system prompts that adapt all four AI agents to domain-specific language and constraints:
 
 \begin{itemize}
-    \item \textbf{Achievements:} What are the significant achievements of your implementation as a creative support tool? (e.g., comparison to original system if applicable).
-    \item \textbf{Limitations:} What are the significant limitations of your implementation?
-    \item \textbf{Retrospective:} What would you do differently if you were to start your project again now?
+    \item \textbf{General Domain:} Broad creative partner for open-ended ideation.
+    \item \textbf{Story Domain:} Plot consultant (inspire), master editor (synthesize), literary critic (critique), focuses on narrative tension, character motivations, and plot coherence.
+    \item \textbf{Business Domain:} Disruptive innovator (inspire), product manager (synthesize), venture capitalist (critique), focuses on market gaps, value propositions, and monetization risks.
+\end{itemize}
+
+\textbf{Four-Agent Task Orchestration:}
+Within each domain, four specialized AI agents handle distinct creative functions with intelligent provider routing:
+\begin{itemize}
+    \item \textbf{Creative Agent (Inspire):} Routes to Gemini 2.0 Flash or Ollama/Mistral. Generates three domain-appropriate divergent ideas (e.g., plot twists for Story, business models for Business).
+    \item \textbf{Reasoning Agent (Synthesize):} Routes to Gemini or Ollama. Merges 2--3 nodes using domain-specific synthesis logic (e.g., story synopsis with clear structure, or UVP/elevator pitch for Business).
+    \item \textbf{Linguistic Agent (Refine Title):} Routes to Ollama (local/fast) or Gemini. Generates concise 8-word titles.
+    \item \textbf{Critical Agent (Critique):} Routes to Gemini or Ollama. Identifies 3 domain-specific flaws (e.g., plot holes for Story, market risks for Business).
+\end{itemize}
+Each endpoint logs its routing decision to demonstrate active orchestration and accepts a \texttt{domain} parameter to select the appropriate persona from the \texttt{PROMPTS} library.
+
+\section{Example Outputs}
+To evaluate the system's ability to support distinct phases of the creative cycle, we tested IdeaForge using diverse seed inputs. The following examples illustrate how switching between agents ("Inspire", "Critique", "Synthesize") and domains ("Business", "General", "Narrative") alters the system's output to support different cognitive needs.
+
+\subsection{Test Case 1: Augmented Divergence (Business Domain)}
+\textbf{Objective:} To demonstrate the system's ability to overcome fixation by generating distinct business models from a single product description.
+
+\noindent \textbf{Input Node:} \\
+\textit{"IdeaForge is a graph-based creative support tool that uses multi-agent AI to help writers and strategists map, expand, and refine their ideas non-linearly."}
+
+\noindent \textbf{System Configuration:} Agent: \texttt{Inspire} | Domain: \texttt{Business Strategy}
+
+\noindent \textbf{Generated Output (New Nodes):}
+\begin{enumerate}
+    \item \textbf{IdeaForge XL:} A large-scale enterprise solution for corporations to manage and optimize their idea generation processes across multiple departments, fostering cross-functional collaboration and innovation at an organizational level.
+    \item \textbf{IdeaForge Studio:} A subscription-based platform offering AI-driven tools and templates tailored for freelance creatives, writers, and strategists to accelerate their ideation process, collaborate with peers, and expand their client base.
+    \item \textbf{IdeaForge Edu:} An educational tool designed to aid students in developing critical thinking and creative problem-solving skills by providing AI-powered idea mapping, analysis, and peer collaboration features integrated into school curriculums.
+\end{enumerate}
+
+\noindent \textbf{Analysis:} \\
+The "Inspire" agent successfully utilized the Business persona to translate a technical description into three distinct market strategies (Enterprise, B2C SaaS, and EdTech). Instead of generating generic synonyms, the system expanded the "possibility space," offering the user three divergent paths for commercialization.
+
+\subsection{Test Case 2: Critical Evaluation (General Domain)}
+\textbf{Objective:} To demonstrate the system's ability to act as a "Devil's Advocate," countering the tendency of standard LLMs to blindly agree with user inputs.
+
+\noindent \textbf{Input Node:} \\
+(Same definition of IdeaForge as above).
+
+\noindent \textbf{System Configuration:} Agent: \texttt{Critique} | Domain: \texttt{General Ideation}
+
+\noindent \textbf{Generated Output (Warning Nodes):}
+\begin{itemize}
+    \item \textbf{Limited Accessibility:} The complexity of the AI system might make it difficult for non-technical users to navigate and utilize effectively, potentially limiting its accessibility to a more specialized audience.
+    \item \textbf{Overdependence on Technology:} Relying solely on AI for idea generation may result in a lack of originality or unique perspectives as the system is based on existing data and patterns. This could lead to repetitive or formulaic output.
+    \item \textbf{Quality Control:} Without proper quality control measures, the AI might produce irrelevant or low-quality suggestions that hinder rather than help the creative process for writers and strategists.
+\end{itemize}
+
+\noindent \textbf{Analysis:} \\
+The "Critique" agent successfully shifted from generation to evaluation. Unlike a standard chat interface which might respond with "This sounds like a great tool!", IdeaForge identified specific UX risks (complexity) and ethical concerns (overdependence). This output forces the user into "evaluative cognition," compelling them to refine the concept to address these flaws.
+
+\subsection{Test Case 3: Computational Convergence (Narrative Domain)}
+\textbf{Objective:} To demonstrate the system's ability to logically merge disparate ideas into a coherent narrative synopsis.
+
+\noindent \textbf{Input Nodes (Selected simultaneously):} 
+\begin{itemize}
+    \item \textbf{Node A:} "A lighthouse keeper stuck in a time loop, repeating the same storm every night. He tries to warn ships, but they always crash."
+    \item \textbf{Node B:} "The keeper writes radio logs, but his handwriting changes in the book, suggesting he might be an unreliable narrator or possessed by the previous keeper."
+\end{itemize}
+
+\noindent \textbf{System Configuration:} Agent: \texttt{Synthesize} | Domain: \texttt{Short Story / Narrative}
+
+\noindent \textbf{Generated Output (Child Node):} \\
+``In a haunting coastal town, a tormented lighthouse keeper is trapped in a recurring time loop, where each night brings a treacherous storm that inevitably leads to shipwrecks. Desperate to prevent the impending disasters, he documents his pleas on radio logs. Yet, an unsettling twist emerges as he notices his handwriting in the logbooks changes mysteriously, hinting at the possibility of a possessing presence or his own unreliability, further blurring the line between reality and supernatural phenomena.''
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1.0\linewidth]{synthesis_output.png}
+    \caption{\textbf{Visualizing Convergence.} Two independent idea nodes (middle) are selected and processed by the Synthesize agent to generate a unified child node (bottom). This illustrates the system's spatial handling of combinatorial creativity.}
+    \label{fig:synthesis}
+\end{figure}
+
+\noindent \textbf{Analysis:} \\
+The "Synthesize" agent functioned as a narrative editor. Rather than simply concatenating the two texts, it wove the "Time Loop" plot device (Node A) with the "Unreliable Narrator" character detail (Node B) to create a unified synopsis. This demonstrates the tool's capacity to support convergent thinking, moving from scattered brainstorming to a cohesive story structure.
+
+\section{Reflection and Future Work}
+
+\subsection{Reflection}
+The implementation of IdeaForge successfully validates the hypothesis that spatial interfaces can enhance the co-creative experience. 
+\begin{itemize}
+    \item \textbf{Achievements:} The primary achievement is the successful orchestration of multi-agent workflows within a spatial UI. The "Synthesize" function proved particularly effective, offering a capability that standard chat interfaces lack entirely: the ability to explicitly merge distinct threads of thought. Furthermore, the domain-persona system successfully demonstrated that the \textit{framing} of AI feedback is just as important as the content; a "Critique" from a Venture Capitalist persona is fundamentally different from that of a Literary Editor.
+    
+    \item \textbf{Limitations:} The current proof-of-concept relies on a "local context" window. When the AI processes a node, it only "sees" the immediate parent or selected nodes, not the entire graph history. This limits the system's ability to maintain long-range narrative coherence. Additionally, reliance on local models (via Ollama) introduced latency that occasionally disrupted the "flow state" essential for creativity. Finally, due to project timelines, a formal user study was not conducted; evaluation remains qualitative based on the authors' usage.
+    
+    \item \textbf{Retrospective:} If restarting the project, we would implement a Retrieval-Augmented Generation (RAG) layer. This would allow the AI to query the entire graph database for relevant context before generating new nodes, solving the issue of fragmented coherence. We would also prioritize a mobile-responsive design, as the current heavy reliance on right-clicks and drag-and-drop limits usage to desktop environments.
 \end{itemize}
 
 \subsection{Future Directions}
-% ii. Identify some future directions for your project.
-\textit{Identify future directions for the project:}
-
 \begin{itemize}
-    \item \textbf{Extensions:} How might your creative support tool be extended? (e.g., new domains or datasets).
-    \item \textbf{Improvements:} How might your creative support tool be improved?
+    \item \textbf{Extensions (Collaborative Ideation):} The natural next step is to introduce real-time collaboration (using WebSockets), allowing multiple human users to work on the same graph simultaneously. This would transform IdeaForge from a solitary writing tool into a digital whiteboard for team strategy sessions.
+    
+    \item \textbf{Improvements (Semantic Clustering):} Future iterations should implement embedding-based similarity detection. As the graph grows, the system could automatically draw "soft links" between distant nodes that share thematic similarities, helping users discover connections they hadn't consciously realized.
 \end{itemize}
+
+\newpage
+\begin{thebibliography}{99}
+
+\bibitem{amabile1983}
+Amabile, T. M. (1983). 
+The social psychology of creativity: A componential conceptualization. 
+\textit{Journal of Personality and Social Psychology}, 45(2), 357–376.
+
+\bibitem{bushnell2025}
+Bushnell, M., \& Harrison, S. (2025). 
+Evaluating the Use of AI to Promote Creativity in Online Creative Writing Courses. 
+\textit{Proceedings of the ACM Conference on Creativity \& Cognition}.
+
+\bibitem{chakrabarty2024}
+Chakrabarty, T., et al. (2024). 
+Art or Artifice? Large Language Models and the False Promise of Creativity. 
+\textit{Proceedings of the CHI Conference on Human Factors in Computing Systems}. ACM.
+
+\bibitem{davis2025}
+Davis, N., \& Rafner, J. (2025). 
+Co-Creative Sense-Making: A Framework for Interaction Dynamics in Co-Creative AI. 
+\textit{International Journal of Human-Computer Studies}, 181, 103-118.
+
+\bibitem{guilford1956}
+Guilford, J. P. (1956). 
+The structure of intellect. 
+\textit{Psychological Bulletin}, 53(4), 267–293.
+
+\bibitem{nakakoji2006}
+Nakakoji, K. (2006). 
+Meanings of Tools, Support, and Uses for Creative Design Processes. 
+In \textit{International Design Research Symposium}.
+
+\bibitem{sharma2023}
+Sharma, M., et al. (2023). 
+Towards Understanding Sycophancy in Large Language Models. 
+\textit{arXiv preprint arXiv:2310.13548}.
+
+\bibitem{shneiderman2020}
+Shneiderman, B. (2020). 
+Human-Centered Artificial Intelligence: Reliable, Safe \& Trustworthy. 
+\textit{International Journal of Human-Computer Interaction}, 36(6), 495-504.
+
+\end{thebibliography}
 
 \end{document}

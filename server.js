@@ -456,6 +456,19 @@ app.post('/api/synthesize', async (req, res) => {
         try {
           logger.info('Orchestrator: Routing "synthesize" to Gemini (Cloud Reasoning Agent - PREFERRED)');
           output = await callGemini(prompt, 200, process.env.GEMINI_MODEL || DEFAULT_MODEL);
+
+          // If Gemini returns a body that signals quota/tokens exhaustion (not an HTTP error),
+          // auto-fallback to Ollama when available.
+          const lower = (output || '').toLowerCase();
+          const tokenExhaustedRe = /no tokens left|no tokens remaining|no tokens|insufficient quota|quota exceeded|out of quota|resource_exhausted|resource exhausted|billing/i;
+          if (tokenExhaustedRe.test(lower)) {
+            logger.warn('Detected Gemini quota/tokens message in synthesize output; switching to Ollama', { snippet: (output || '').slice(0,200) });
+            if (process.env.OLLAMA_URL) {
+              output = await callOllama(prompt, 200, OLLAMA_MODEL);
+            } else {
+              throw new Error('Gemini quota exhausted: ' + (output || '').slice(0,200));
+            }
+          }
         } catch (geminiErr) {
           logger.warn('Gemini failed, auto-switching to Ollama', { error: geminiErr.message });
           if (process.env.OLLAMA_URL) {
@@ -517,6 +530,21 @@ app.post('/api/critique', async (req, res) => {
         try {
           logger.info('Orchestrator: Routing "critique" to Gemini (Cloud Critical Agent - PREFERRED)');
           output = await callGemini(prompt, 200, process.env.GEMINI_MODEL || DEFAULT_MODEL);
+
+          // Detect cases where Gemini returns a successful response body that states
+          // the model or project has no tokens/quota left (these are not thrown
+          // as HTTP errors). If detected, attempt an automatic fallback to Ollama.
+          const lower = (output || '').toLowerCase();
+          const tokenExhaustedRe = /no tokens left|no tokens remaining|no tokens|insufficient quota|quota exceeded|out of quota|resource_exhausted|resource exhausted|billing/i;
+          if (tokenExhaustedRe.test(lower)) {
+            logger.warn('Detected Gemini quota/tokens message in output; switching to Ollama', { snippet: (output || '').slice(0,200) });
+            if (process.env.OLLAMA_URL) {
+              output = await callOllama(prompt, 200, OLLAMA_MODEL);
+            } else {
+              // If Ollama isn't available, surface the Gemini response as an error
+              throw new Error('Gemini quota exhausted: ' + (output || '').slice(0,200));
+            }
+          }
         } catch (geminiErr) {
           logger.warn('Gemini failed, auto-switching to Ollama', { error: geminiErr.message });
           if (process.env.OLLAMA_URL) {
