@@ -55,12 +55,13 @@ Open **http://localhost:3000** in your browser.
 
 1. **Select a Perspective**:
    - Choose a preset (General / Story / Business).
-   - **OR** type a **Custom Role** (e.g., "Cyberpunk Architect") to dynamically shift the AI's tone and expertise.
+   - **OR** type a **Custom Role** (e.g., "Cyberpunk Architect") to override the preset persona and fully shift the AI's tone and expertise.
 
 2. **Graph Operations**:
-   - **Inspire**: Select a node to generate 3 divergent concepts (uses ancestral context).
+   - **Selection controls**: Click selects a single node; Shift/Cmd/Ctrl+Click toggles multi-select; click empty space clears selection.
+   - **Inspire**: Select a node to generate 3 divergent concepts (uses ancestral context and respects Custom Role).
    - **Synthesize**: Select 2+ nodes to merge them into a coherent new concept.
-   - **Critique**: rigorous analysis of a node's flaws or risks.
+   - **Critique**: Highlights 3 risks/flaws; nodes show the critique text directly with a warning icon.
    - **Refine**: Polish titles or simplify complex text.
 
 3. **Management**:
