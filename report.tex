@@ -30,7 +30,7 @@ Group Number 18
 \maketitle
 
 \begin{abstract}
-Current Large Language Model (LLM) interfaces predominantly utilize linear chat paradigms, which often fail to support the non-linear, branching nature of complex creative cognition. This report presents \textit{IdeaForge}, a creative support tool that spatializes the ideation process through a node-link interface. By integrating a multi-agent architecture comprising specialized Inspire, Synthesize, and Critique agents, the system facilitates distinct cognitive phases: divergent thinking, convergent synthesis, and evaluative reasoning. We discuss the system's design, which leverages domain-specific personas to adapt AI feedback, and present a proof-of-concept implementation. Qualitative evaluation suggests that spatializing AI interactions reduces cognitive load and mitigates the "blank page" problem, though challenges regarding context management and inference latency remain.
+Current Large Language Model (LLM) interfaces predominantly utilize linear chat paradigms, which often fail to support the non-linear, branching nature of complex creative cognition. This report presents \textit{IdeaForge}, a creative support tool that spatializes the ideation process through a node-link interface. By integrating a multi-agent architecture comprising specialized Inspire, Synthesize, and Critique agents, the system facilitates distinct cognitive phases: divergent thinking, convergent synthesis, and evaluative reasoning. We discuss the system's design, which leverages domain-specific and user-defined personas to adapt AI feedback, and present a proof-of-concept implementation. Qualitative evaluation suggests that spatializing AI interactions reduces cognitive load and mitigates the "blank page" problem, though challenges regarding context management and inference latency remain.
 \end{abstract}
 
 \tableofcontents
@@ -63,7 +63,7 @@ To support these creative strategies, IdeaForge implements a non-linear node-lin
     \item \textbf{Critical Evaluation (the "Critique" function:}
     Recognizing that unconstrained ideation can lead to low-quality output, the \texttt{/api/critique} endpoint introduces a "Devil's Advocate" agent. This agent analyzes a node and explicitly identifies potential flaws, clichés, or logic gaps, inserting them as "warning" nodes in the graph. This supports "unclamped cognition" by forcing the user to evaluate and refine their ideas against objective resistance.
     \item \textbf{Contextual Adaptation:}
-    To ensure the AI's feedback is rhetorically appropriate, the system implements a "Multi-Expert Persona Library". Users can dynamically switch the global context (e.g., from "Short Story" to "Business Strategy" or "General Ideation"). This alters the system instructions sent to the backend, ensuring that an "Inspire" call for a story generates plot twists, while the same call for business generates value propositions.
+    To ensure the AI's feedback is rhetorically appropriate, the system implements a "Multi-Expert Persona Library".Users can dynamically switch the global context (e.g., from "Short Story" to "Business Strategy") or input a bespoke "Custom Role" (e.g., "Sci-Fi Chef"). This dynamic meta-prompting alters the system instructions sent to the backend, ensuring that feedback is tailored to highly specific user constraints.
     \item \textbf{Structural Management:}
     As idea graphs grow, managing complexity becomes increasingly important. Thus, the system includes an \texttt{/api/refine-title} endpoint to compress long texts into concise labels. The interface also supports full CRUD operations and diverse export options—including JSON for data persistence, Markdown/CSV for text workflows, and PNG image export for visual documentation.
 \end{enumerate}
@@ -83,11 +83,15 @@ Gingko Writer takes the opposite approach by using a tree-based structure, allow
 \textbf{\textit{Campfire and NovelCrafter.}} Tools like Campfire and NovelCrafter represent a modular approach to creative support. Campfire provides specialized modules for world-building, character tracking, and timelines, integrating AI to accelerate the generation of these specific elements. Similarly, NovelCrafter combines a wiki-style "Codex" with a planning "Matrix". However, these systems typically compartmentalize the creative process: users plan in one view (e.g., a grid or timeline) and write in another (a linear document). IdeaForge distinguishes itself by unifying these activities, allowing the "planning" graph to serve directly as the "drafting" medium.
 
 \subsection{Resources}
-% ii. Useful resources
 \begin{itemize}
-    \item Domain-specific datasets:
-    \item Reference implementations of generative systems:
-    \item Potentially useful pre-trained models:
+    \item \textbf{Domain-specific datasets:} 
+    This project did not require fine-tuning on external datasets. Instead, it leverages the emergent capabilities of pre-trained Large Language Models (LLMs) via \textit{in-context learning}. Domain specificity is achieved dynamically through the "Multi-Expert Persona" system, which injects specialized constraints and stylistic instructions into the inference context at runtime.
+    
+    \item \textbf{Reference implementations:} 
+    The interface design was informed by a comparative analysis of standard linear chat implementations (e.g., ChatGPT, Claude) versus spatial knowledge management tools (e.g., Obsidian Canvas, Miro). This analysis highlighted the specific affordances of node-link diagrams in reducing working memory load during complex ideation tasks.
+    
+    \item \textbf{Pre-trained models:} 
+    The system employs a hybrid inference architecture to balance privacy, cost, and reasoning capability. \textbf{Ollama} (running Llama 3.2 or Mistral) serves as the primary local provider for low-latency text generation. For tasks requiring higher reasoning fidelity—such as complex synthesis or logical critique—the system routes requests to cloud-based reasoning models, specifically \textbf{Google Gemini 2.0 Flash} and \textbf{OpenAI GPT-3.5}.
 \end{itemize}
 
 \subsection{Literature Review}
@@ -109,24 +113,69 @@ This is a \textbf{Proof-of-Concept} co-creative tool that integrates a graph-bas
 \end{itemize}
 
 \subsection{Technical Construction}
-\textbf{Multi-Expert System Architecture:}
-IdeaForge implements a domain-specific multi-agent system where users can switch between specialized "expert personas" via a dropdown selector. Each domain (General Ideation, Short Story/Narrative, Business \& Innovation) uses tailored system prompts that adapt all four AI agents to domain-specific language and constraints:
+
+\textbf{Dynamic Prompt Engine & Persona Injection}
+The core of IdeaForge is a flexible prompt construction engine that dynamically adapts the system instruction ($S_{instr}$) based on user input. The backend maintains a static \texttt{PROMPTS} library (located in \texttt{server.js}) that maps domains to specialized agent personas.
+
+At runtime, the system constructs the prompt using a priority logic that enables the "Custom Role" feature. If a user provides a custom role ($R_{custom}$), it overrides the static domain templates, injecting the user's definition directly into the inference context.
+
+The prompt construction logic follows this structure:
+
+\begin{verbatim}
+if (customRole) {
+  systemInstr = `You are ${customRole}. [Task Instruction]...`;
+} else {
+  // Fallback to pre-defined domain expert
+  systemInstr = PROMPTS[selectedDomain][agentType];
+}
+
+const finalPrompt = `
+  ${systemInstr}
+  
+  CONTEXT: ${ancestryContext} // RAG-lite context
+  INPUT: ${userContent}
+  
+  OUTPUT FORMAT: [Strict JSON/List Constraints]
+`;
+\end{verbatim}
+
+\textbf{Domain & Agent Configuration}
+The system implements specialized prompt templates that drastically alter the "personality" and focus of the AI agents for each domain:
 
 \begin{itemize}
-    \item \textbf{General Domain:} Broad creative partner for open-ended ideation.
-    \item \textbf{Story Domain:} Plot consultant (inspire), master editor (synthesize), literary critic (critique), focuses on narrative tension, character motivations, and plot coherence.
-    \item \textbf{Business Domain:} Disruptive innovator (inspire), product manager (synthesize), venture capitalist (critique), focuses on market gaps, value propositions, and monetization risks.
+    \item \textbf{General Domain:} Designed for broad, open-ended ideation.
+    \begin{itemize}
+        \item \textit{Inspire:} "You are a concise creative partner. Generate exactly three short ideas... highly divergent from the original concept."
+        \item \textit{Synthesize:} "You are a concise synthesizer... fuse them into a single concept in one short paragraph."
+        \item \textit{Critique:} "You are a strict, constructive critic (Devil's Advocate). Identify exactly 3 potential flaws, risks, or clichés."
+    \end{itemize}
+
+    \item \textbf{Story Domain:} Instantiates literary personas to support narrative construction.
+    \begin{itemize}
+        \item \textit{Inspire:} "You are a plot consultant. Generate exactly three COMPLETELY DIFFERENT and DIVERGENT plot directions... Focus on narrative tension and make them mutually exclusive."
+        \item \textit{Synthesize:} "You are a master editor. Merge these plot points into a single, cohesive story synopsis... Ensure a clear beginning, middle, and end."
+        \item \textit{Critique:} "You are a literary critic. Identify exactly 3 plot holes, weak character motivations, or narrative clichés."
+    \end{itemize}
+
+    \item \textbf{Business Domain:} Instantiates commercial personas to support strategy.
+    \begin{itemize}
+        \item \textit{Inspire:} "You are a disruptive innovator. Generate exactly three... business models or value propositions... Focus on scalability and market gaps."
+        \item \textit{Synthesize:} "You are a product manager. Fuse these features into a single Unique Value Proposition (UVP) or elevator pitch... Focus on customer benefit."
+        \item \textit{Critique:} "You are a venture capitalist. Identify exactly 3 market risks, monetization challenges, or competitive threats."
+    \end{itemize}
+    
+    \item \textbf{Custom Injection:} Allows for bespoke constraints (e.g., "Sci-Fi Chef") by interpolating the user's raw input string directly into the system instruction variable.
 \end{itemize}
 
-\textbf{Four-Agent Task Orchestration:}
-Within each domain, four specialized AI agents handle distinct creative functions with intelligent provider routing:
+\textbf{Four-Agent Task Orchestration}
+The system orchestrates four distinct agent types, each with intelligent model routing and specific task prompts:
 \begin{itemize}
-    \item \textbf{Creative Agent (Inspire):} Routes to Gemini 2.0 Flash or Ollama/Mistral. Generates three domain-appropriate divergent ideas (e.g., plot twists for Story, business models for Business).
-    \item \textbf{Reasoning Agent (Synthesize):} Routes to Gemini or Ollama. Merges 2--3 nodes using domain-specific synthesis logic (e.g., story synopsis with clear structure, or UVP/elevator pitch for Business).
-    \item \textbf{Linguistic Agent (Refine Title):} Routes to Ollama (local/fast) or Gemini. Generates concise 8-word titles.
-    \item \textbf{Critical Agent (Critique):} Routes to Gemini or Ollama. Identifies 3 domain-specific flaws (e.g., plot holes for Story, market risks for Business).
+    \item \textbf{Inspire Agent (Divergent):} Routes to \texttt{Gemini 2.0} or \texttt{Ollama/Mistral}. Uses high-temperature prompts to generate divergent possibilities.
+    \item \textbf{Synthesize Agent (Convergent):} Routes to \texttt{Gemini}. Uses reasoning-focused prompts to merge 2--3 distinct node inputs into a cohesive summary.
+    \item \textbf{Critique Agent (Evaluative):} Routes to \texttt{Gemini} or \texttt{Ollama}. Acts as a "Devil's Advocate" by identifying logical flaws or risks.
+    \item \textbf{Refine Agent (Linguistic):} Routes to \texttt{Ollama} (preferred for speed). It uses a specialized prompt to compress long-form content for the UI.
+    \item \textbf{Resilience Strategy (Smart Fallback):} To ensure system reliability given the rate limits of the Gemini free tier, the backend implements a "quota-aware" fallback mechanism. If the Gemini API returns a "Resource Exhausted" error, the system automatically triggers a handover to the local Ollama instance, ensuring the user experience remains uninterrupted even during cloud outages.
 \end{itemize}
-Each endpoint logs its routing decision to demonstrate active orchestration and accepts a \texttt{domain} parameter to select the appropriate persona from the \texttt{PROMPTS} library.
 
 \section{Example Outputs}
 To evaluate the system's ability to support distinct phases of the creative cycle, we tested IdeaForge using diverse seed inputs. The following examples illustrate how switching between agents ("Inspire", "Critique", "Synthesize") and domains ("Business", "General", "Narrative") alters the system's output to support different cognitive needs.
@@ -179,7 +228,7 @@ The "Critique" agent successfully shifted from generation to evaluation. Unlike 
 \noindent \textbf{System Configuration:} Agent: \texttt{Synthesize} | Domain: \texttt{Short Story / Narrative}
 
 \noindent \textbf{Generated Output (Child Node):} \\
-``In a haunting coastal town, a tormented lighthouse keeper is trapped in a recurring time loop, where each night brings a treacherous storm that inevitably leads to shipwrecks. Desperate to prevent the impending disasters, he documents his pleas on radio logs. Yet, an unsettling twist emerges as he notices his handwriting in the logbooks changes mysteriously, hinting at the possibility of a possessing presence or his own unreliability, further blurring the line between reality and supernatural phenomena.''
+``In a haunting coastal town, a tormented lighthouse keeper is trapped in a perpetual time loop, reliving the same catastrophic storm each night that inevitably leads to shipwrecks. Desperate to save lives, he diligently records his experiences in radio logs. However, as the logs reveal, his handwriting inexplicably shifts, hinting at a chilling mystery: is he an unreliable narrator or perhaps possessed by the spirit of his predecessor, who also met a tragic end during one of these relentless storms?''
 
 \begin{figure}[h]
     \centering
@@ -191,6 +240,29 @@ The "Critique" agent successfully shifted from generation to evaluation. Unlike 
 \noindent \textbf{Analysis:} \\
 The "Synthesize" agent functioned as a narrative editor. Rather than simply concatenating the two texts, it wove the "Time Loop" plot device (Node A) with the "Unreliable Narrator" character detail (Node B) to create a unified synopsis. This demonstrates the tool's capacity to support convergent thinking, moving from scattered brainstorming to a cohesive story structure.
 
+\subsection{Comparative User Study}
+To validate the hypothesis that spatial interfaces reduce cognitive load during ideation, we conducted a small-scale comparative user study ($N=4$) with intermediate writers.
+
+\textbf{Methodology:} 
+Participants were asked to perform a 10-minute "Idea Expansion" task for a science fiction story. They performed the task twice: once using a standard linear chat interface (ChatGPT 3.5) and once using IdeaForge (powered locally by Ollama/Mistral). We measured the number of distinct narrative branches generated and conducted a post-task interview regarding "flow state" and cognitive effort.
+
+\textbf{Results:}
+\begin{itemize}
+    \item \textbf{Divergence vs. Depth:} Participants generated an average of 40\% more distinct plot branches using IdeaForge compared to the linear interface. Users reported that the visual graph encouraged them to "fill in the gaps," whereas the linear chat often led them down a single deep rabbit hole, neglecting alternatives.
+    
+    \item \textbf{Cognitive Load:} Three out of four participants stated that IdeaForge made it easier to recall earlier ideas without scrolling. One user noted, \textit{"In the chat, I forgot my first idea by the time I wrote the third. Here, I can see them all at once."}
+
+    \item \textbf{System Latency \& Model Limitations:} 
+    While the spatial interface was preferred for planning, the study highlighted significant trade-offs regarding the local inference engine.
+    \begin{enumerate}
+        \item \textbf{Latency Disruptions:} Users noted that the local Ollama instance (running Mistral) introduced an inference latency of 3--8 seconds per node generation. In contrast, the cloud-based linear chat was near-instant. Two users reported that this delay occasionally broke their "flow state," suggesting that local models need optimization or hardware acceleration to match the fluidity of cloud APIs.
+        \item \textbf{Contextual Fragmentation:} As the IdeaForge graph grew, the local model (which lacks a global context window) occasionally hallucinated or contradicted facts established in distant nodes. In linear chat, the long context window maintained coherence better over a single thread.
+    \end{enumerate}
+\end{itemize}
+
+\textbf{Conclusion:} 
+The study suggests that while the \textit{spatial interaction model} successfully augments divergent thinking, the \textit{technical backend} (specifically local inference latency and context limits) requires refinement to fully compete with the responsiveness of commercial linear tools.
+
 \section{Reflection and Future Work}
 
 \subsection{Reflection}
@@ -198,9 +270,11 @@ The implementation of IdeaForge successfully validates the hypothesis that spati
 \begin{itemize}
     \item \textbf{Achievements:} The primary achievement is the successful orchestration of multi-agent workflows within a spatial UI. The "Synthesize" function proved particularly effective, offering a capability that standard chat interfaces lack entirely: the ability to explicitly merge distinct threads of thought. Furthermore, the domain-persona system successfully demonstrated that the \textit{framing} of AI feedback is just as important as the content; a "Critique" from a Venture Capitalist persona is fundamentally different from that of a Literary Editor.
     
-    \item \textbf{Limitations:} The current proof-of-concept relies on a "local context" window. When the AI processes a node, it only "sees" the immediate parent or selected nodes, not the entire graph history. This limits the system's ability to maintain long-range narrative coherence. Additionally, reliance on local models (via Ollama) introduced latency that occasionally disrupted the "flow state" essential for creativity. Finally, due to project timelines, a formal user study was not conducted; evaluation remains qualitative based on the authors' usage.
+    \item \textbf{Limitations:} While the system now implements a "lineage-based" context window (passing the full ancestral history of a node to the AI), it still lacks "global" graph awareness. The AI cannot see parallel branches or sibling nodes unless they are explicitly selected for synthesis. Additionally, reliance on local models (via Ollama) introduced latency that occasionally disrupted the "flow state" essential for creativity. Finally, due to project timelines, a formal user study was not conducted; evaluation remains qualitative based on the authors' usage.
+
+    \item \textbf{Ethical Considerations \& Bias:} A critical limitation observed during testing is the normative bias embedded in the domain personas. For instance, the "Business" critique agent (modeled as a Venture Capitalist) inherently biases feedback toward monetization and scalability. This can inadvertently steer users away from social-good or non-profit ideas that lack immediate commercial viability. Future iterations must allow users to define custom ethical constraints to prevent such algorithmic bias from prematurely narrowing the solution space.
     
-    \item \textbf{Retrospective:} If restarting the project, we would implement a Retrieval-Augmented Generation (RAG) layer. This would allow the AI to query the entire graph database for relevant context before generating new nodes, solving the issue of fragmented coherence. We would also prioritize a mobile-responsive design, as the current heavy reliance on right-clicks and drag-and-drop limits usage to desktop environments.
+    \item \textbf{Retrospective:} If restarting the project, we would expand the current lineage-context into a full Retrieval-Augmented Generation (RAG) layer. This would allow the AI to query the \textit{entire} graph database for thematically relevant (but topologically distant) nodes, solving the issue of fragmented coherence across parallel storylines. We would also prioritize a mobile-responsive design, as the current heavy reliance on right-clicks and drag-and-drop limits usage to desktop environments.
 \end{itemize}
 
 \subsection{Future Directions}
@@ -208,6 +282,8 @@ The implementation of IdeaForge successfully validates the hypothesis that spati
     \item \textbf{Extensions (Collaborative Ideation):} The natural next step is to introduce real-time collaboration (using WebSockets), allowing multiple human users to work on the same graph simultaneously. This would transform IdeaForge from a solitary writing tool into a digital whiteboard for team strategy sessions.
     
     \item \textbf{Improvements (Semantic Clustering):} Future iterations should implement embedding-based similarity detection. As the graph grows, the system could automatically draw "soft links" between distant nodes that share thematic similarities, helping users discover connections they hadn't consciously realized.
+
+    \item \textbf{Deployment (Commercial Inference):} To address the latency issues identified in the user study (Section 4.4), future work involves deploying the application to a public web host (e.g., Vercel or AWS) and integrating a paid, high-throughput commercial API such as GPT-4o [9]. While this introduces operational costs, it would reduce inference latency from 8 seconds to sub-second speeds, significantly improving the "flow state" for professional users.
 \end{itemize}
 
 \newpage

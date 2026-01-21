@@ -209,15 +209,42 @@ function updateNodeSelectionVisual(id, isSelected) {
 
 if (network) {
   network.on('click', (params) => {
-    // If a node was clicked, toggle its selection state
-    if (params.nodes && params.nodes.length) {
-      const id = params.nodes[0];
-      if (selectionSet.has(id)) {
-        selectionSet.delete(id);
-        updateNodeSelectionVisual(id, false);
+    const { event: { srcEvent } } = params;
+    // Standard behavior: Shift for multi-select (also support Cmd/Ctrl)
+    const isMultiSelect = srcEvent.shiftKey || srcEvent.metaKey || srcEvent.ctrlKey;
+    
+    // Check what was clicked using getNodeAt which is robust
+    const clickedId = network.getNodeAt(params.pointer.DOM);
+
+    if (clickedId) {
+      if (isMultiSelect) {
+        // Toggle selection
+        if (selectionSet.has(clickedId)) {
+          selectionSet.delete(clickedId);
+          updateNodeSelectionVisual(clickedId, false);
+        } else {
+          selectionSet.add(clickedId);
+          updateNodeSelectionVisual(clickedId, true);
+        }
       } else {
-        selectionSet.add(id);
-        updateNodeSelectionVisual(id, true);
+        // Single select: Clear others, select this one
+        selectionSet.forEach(id => {
+          if (id !== clickedId) updateNodeSelectionVisual(id, false);
+        });
+        selectionSet.clear();
+        selectionSet.add(clickedId);
+        updateNodeSelectionVisual(clickedId, true);
+      }
+      
+      // Sync internal Vis selection state
+      network.selectNodes(Array.from(selectionSet));
+      
+    } else {
+      // Clicked on empty space: clear selection unless modifier held
+      if (!isMultiSelect) {
+        selectionSet.forEach(id => updateNodeSelectionVisual(id, false));
+        selectionSet.clear();
+        network.unselectAll();
       }
     }
   });

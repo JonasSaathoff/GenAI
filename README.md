@@ -1,8 +1,17 @@
 # IdeaForge – Multi-Expert Creative Graph
 
-A local-first creative support tool that orchestrates multiple AI agents with domain-specific personas. Build spatial idea graphs using Inspire, Synthesize, Critique, and Refine agents.
+A hybrid AI creative support tool that orchestrates multiple AI agents to help you brainstorm, refine, and connect ideas. It creates spatial idea graphs using Inspire, Synthesize, Critique, and Refine agents, leveraging a **Smart Hybrid Architecture** that combines the speed and quality of Cloud AI (Gemini 2.0 Flash) with the reliability and privacy of Local AI (Ollama).
 
-📄 **For detailed documentation, see [report.tex](report.tex)**
+📄 **For detailed documentation, see the local [report.tex](report.tex) file.**
+
+---
+
+## Key Features
+
+- **Smart Hybrid Engine**: Primarily uses **Gemini 2.0 Flash** for high-quality responses. If the API quota is exhausted, it automatically relies on **Ollama (Mistral)** running locally, ensuring uninterrupted workflows.
+- **Context-Aware Agents (RAG-Lite)**: Agents don't just see the single node you selected; they analyze the entire lineage path of the idea to provide contextually relevant suggestions.
+- **Dynamic Personas**: Go beyond preset domains. Define any **Custom Role** (e.g., "Skeptical V.C.", "Sci-Fi Author", "UX Researcher") to shape the AI's perspective instantly.
+- **Spatial Graph Interface**: Visual node-based interface for divergent (Inspire) and convergent (Synthesize) thinking.
 
 ---
 
@@ -10,7 +19,8 @@ A local-first creative support tool that orchestrates multiple AI agents with do
 
 ### 1. Prerequisites
 - **Node.js** 18+
-- **Ollama** running locally
+- **Ollama** running locally (for offline capability and fallback)
+- **Google Gemini API Key** (for primary high-speed model)
 
 ### 2. Install Ollama Model
 ```bash
@@ -23,49 +33,54 @@ npm install
 ```
 
 ### 4. Configure Environment
-Create a `.env` file:
+Create a `.env` file in the root directory:
 ```bash
+# Primary Cloud Model (Recommended for best performance)
+GEMINI_API_KEY=your_gemini_api_key_here
+
+# Local Fallback Model
 OLLAMA_URL=http://localhost:11434
 OLLAMA_MODEL=mistral
-
-# Optional cloud fallbacks:
-# GEMINI_API_KEY=your_key
-# OPENAI_API_KEY=your_key
 ```
 
-### 5. Run
+### 5. Run Application
 ```bash
 npm start
 ```
-
-Open **http://localhost:3000**
+Open **http://localhost:3000** in your browser.
 
 ---
 
-## Basic Usage
+## Usage Guide
 
-1. **Select a domain** (General / Story / Business) to adapt AI personas
-2. **Add ideas** using the input field or AI agents:
-   - **Inspire** → 3 divergent ideas from selected node
-   - **Synthesize** → Merge 2-3 nodes into one
-   - **Critique** → Identify 3 flaws/risks
-   - **Refine** → Generate concise title
-3. **Save/Load** projects locally
-4. **Export** as JSON, Markdown, CSV, or PNG
+1. **Select a Perspective**:
+   - Choose a preset (General / Story / Business).
+   - **OR** type a **Custom Role** (e.g., "Cyberpunk Architect") to dynamically shift the AI's tone and expertise.
+
+2. **Graph Operations**:
+   - **Inspire**: Select a node to generate 3 divergent concepts (uses ancestral context).
+   - **Synthesize**: Select 2+ nodes to merge them into a coherent new concept.
+   - **Critique**: rigorous analysis of a node's flaws or risks.
+   - **Refine**: Polish titles or simplify complex text.
+
+3. **Management**:
+   - Save/Load projects locally (JSON).
+   - Export graph data as Markdown, CSV, or Image.
 
 ---
 
 ## Project Structure
+
 ```
-├── server.js       # Express backend, AI routing
+├── server.js       # Express backend (Hybrid AI routing, Fallback logic)
 ├── public/
-│   ├── index.html  # UI layout
-│   ├── app.js      # Graph visualization & logic
+│   ├── index.html  # Graph UI & Custom Role input
+│   ├── app.js      # Frontend logic, Context gathering, Vis.js graph
 │   └── styles.css  # Styling
-├── report.tex      # Full documentation
+├── report.tex      # Research paper/Report (Local only)
 └── package.json
 ```
 
 ---
 
-**Note:** Works fully offline with Ollama. Cloud providers (Gemini/OpenAI) are optional fallbacks.
+**Note:** The system is designed to be resilient. If your Gemini API Limit is hit, the backend log will show a switch to Ollama for subsequent requests seamlessly.
