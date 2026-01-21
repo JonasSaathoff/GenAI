@@ -357,9 +357,15 @@ app.post('/api/inspire', async (req, res) => {
     // Select persona based on domain
     const persona = PROMPTS[domain] || PROMPTS.general;
     // If a custom role is provided, build a dynamic system instruction that
-    // injects the role description before the persona template. This keeps the
-    // template's behavior while adapting the role quickly.
-    const systemInstr = customRole ? `You are ${customRole}. ${persona.inspire}` : persona.inspire;
+    // injects the role description by REPLACING the default persona definition.
+    // This ensures the model doesn't get conflicting "You are X" instructions.
+    let systemInstr = persona.inspire;
+    if (customRole) {
+       // Replace the first sentence "You are [something]." with the custom role
+       const newInstr = systemInstr.replace(/^You are [^.]+\./, `You are ${customRole}.`);
+       // If replacement happened, use it; otherwise prepend as fallback
+       systemInstr = (newInstr !== systemInstr) ? newInstr : `You are ${customRole}. ${persona.inspire}`;
+    }
     const contextBlock = context ? `\n\nCONTEXT (History of this idea):\n${context}` : '';
     const prompt = `${systemInstr}${contextBlock}\n\nCURRENT CONCEPT: ${content}\n\nRespond format strictly:\n1. Idea one (<= 2 sentences)\n2. Idea two (<= 2 sentences)\n3. Idea three (<= 2 sentences)`;
     
@@ -522,7 +528,16 @@ app.post('/api/critique', async (req, res) => {
 
     // Select persona based on domain
     const persona = PROMPTS[domain] || PROMPTS.general;
-    const systemInstr = customRole ? `You are ${customRole}. ${persona.critique}` : persona.critique;
+    
+    // If a custom role is provided, build a dynamic system instruction that
+    // injects the role description by REPLACING the default persona definition.
+    let systemInstr = persona.critique;
+    if (customRole) {
+       // Replace the first sentence "You are [something]." with the custom role
+       const newInstr = systemInstr.replace(/^You are [^.]+\./, `You are ${customRole}.`);
+       // If replacement happened, use it; otherwise prepend as fallback
+       systemInstr = (newInstr !== systemInstr) ? newInstr : `You are ${customRole}. ${persona.critique}`;
+    }
     const contextBlock = context ? `\n\nCONTEXT (History of this idea):\n${context}` : '';
     const prompt = `${systemInstr}${contextBlock}\n\nCURRENT CONCEPT:\n${content}\n\nOutput format:\n1. [Flaw/Risk]\n2. [Flaw/Risk]\n3. [Flaw/Risk]`;
 

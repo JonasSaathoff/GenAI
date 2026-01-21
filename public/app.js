@@ -549,10 +549,13 @@ btnCritique.addEventListener('click', async () => {
         .replace(/_(.*?)_/g, '$1');        // Remove _italic_
       
       // Use red color and warning emoji to indicate this is a critique
+      // CHANGE: Use the specific critique point as the title so it's visible on the node
+      const displayTitle = '⚠️ ' + cleanedPoint; 
+      
       const n = { 
         ...makeNode({ 
           id, 
-          title: '⚠️ Critique', 
+          title: displayTitle, 
           content: cleanedPoint, 
           parentId: node.id, 
           branchColor: 'red'
