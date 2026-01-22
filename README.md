@@ -1,41 +1,47 @@
 # IdeaForge – Multi-Expert Creative Graph
 
-A hybrid AI creative support tool that orchestrates multiple AI agents to help you brainstorm, refine, and connect ideas. It creates spatial idea graphs using Inspire, Synthesize, Critique, and Refine agents, leveraging a **Smart Hybrid Architecture** that combines the speed and quality of Cloud AI (Gemini 2.0 Flash) with the reliability and privacy of Local AI (Ollama).
+Project for Generative AI @ Leiden University in 2026. It demonstrates spatial AI-assisted ideation using a graph-based interface with specialized AI agents for brainstorming, synthesis, and critical evaluation.
 
-📄 **For detailed documentation, see the local [report.tex](report.tex) file.**
+📄 Read the full report here: [IdeaForge Research Paper (PDF)](https://github.com/JonasSaathoff/GenAI/blob/main/report.pdf)
 
----
+## Overview
 
-## Key Features
+This project implements a creative support tool that can:
+- Generate divergent ideas from any concept (Inspire agent)
+- Merge multiple concepts into cohesive syntheses (Synthesize agent)
+- Provide critical evaluation and identify flaws (Critique agent)
+- Support custom AI personas and domain-specific workflows
+- Visualize idea relationships as an interactive node graph
+- Operate with hybrid AI (Cloud + Local fallback for reliability)
 
-- **Smart Hybrid Engine**: Primarily uses **Gemini 2.0 Flash** for high-quality responses. If the API quota is exhausted, it automatically relies on **Ollama (Mistral)** running locally, ensuring uninterrupted workflows.
-- **Context-Aware Agents (RAG-Lite)**: Agents don't just see the single node you selected; they analyze the entire lineage path of the idea to provide contextually relevant suggestions.
-- **Dynamic Personas**: Go beyond preset domains. Define any **Custom Role** (e.g., "Skeptical V.C.", "Sci-Fi Author", "UX Researcher") to shape the AI's perspective instantly.
-- **Spatial Graph Interface**: Visual node-based interface for divergent (Inspire) and convergent (Synthesize) thinking.
+## Project Structure
 
----
-
-## Quick Setup
-
-### 1. Prerequisites
-- **Node.js** 18+
-- **Ollama** running locally (for offline capability and fallback)
-- **Google Gemini API Key** (for primary high-speed model)
-
-### 2. Install Ollama Model
-```bash
-ollama pull mistral
+```
+├── server.js               # Express backend with multi-agent orchestration
+├── public/
+│   ├── index.html          # Graph UI with domain selector and custom roles
+│   ├── app.js              # Frontend logic, vis-network graph, CRUD operations
+│   └── styles.css          # UI styling
+├── package.json            # Dependencies and scripts
+├── .env                    # API keys (user-created, not in repo)
+└── README.md               # This file
 ```
 
-### 3. Install Dependencies
+## Installation
+
+1. Install dependencies:
 ```bash
 npm install
 ```
 
-### 4. Configure Environment
-Create a `.env` file in the root directory:
+2. Install Ollama (for local AI fallback):
 ```bash
-# Primary Cloud Model (Recommended for best performance)
+ollama pull mistral
+```
+
+3. Create a `.env` file in the root directory:
+```bash
+# Primary Cloud Model (Recommended)
 GEMINI_API_KEY=your_gemini_api_key_here
 
 # Local Fallback Model
@@ -43,45 +49,46 @@ OLLAMA_URL=http://localhost:11434
 OLLAMA_MODEL=mistral
 ```
 
-### 5. Run Application
+## Usage
+
+### Start the Application
+
+Run the server:
+
 ```bash
 npm start
 ```
-Open **http://localhost:3000** in your browser.
 
----
+Open `http://localhost:3000` in your browser.
 
-## Usage Guide
+### Graph Operations
 
-1. **Select a Perspective**:
-   - Choose a preset (General / Story / Business).
-   - **OR** type a **Custom Role** (e.g., "Cyberpunk Architect") to override the preset persona and fully shift the AI's tone and expertise.
+- **Selection**: Click a node to select; Shift/Cmd/Ctrl+Click to multi-select
+- **Inspire**: Select 1 node → Generate 3 divergent alternatives
+- **Synthesize**: Select 2+ nodes → Merge into a unified concept
+- **Critique**: Select 1 node → Identify 3 potential flaws or risks
+- **Refine**: Condense long-form text into concise titles
+- **New Idea**: Add manual ideas as child nodes
+- **Save/Load**: Persist projects locally via JSON
 
-2. **Graph Operations**:
-   - **Selection controls**: Click selects a single node; Shift/Cmd/Ctrl+Click toggles multi-select; click empty space clears selection.
-   - **Inspire**: Select a node to generate 3 divergent concepts (uses ancestral context and respects Custom Role).
-   - **Synthesize**: Select 2+ nodes to merge them into a coherent new concept.
-   - **Critique**: Highlights 3 risks/flaws; nodes show the critique text directly with a warning icon.
-   - **Refine**: Polish titles or simplify complex text.
+### Custom Personas
 
-3. **Management**:
-   - Save/Load projects locally (JSON).
-   - Export graph data as Markdown, CSV, or Image.
+Use the "Custom Role" input to dynamically override preset domains:
+- Example: `"Skeptical VC"`, `"Sci-Fi Author"`, `"UX Researcher"`
+- The AI will adopt this perspective for all subsequent operations
 
----
+### Exporting
 
-## Project Structure
+Export your idea graph as:
+- **JSON**: Full project data with graph structure
+- **Markdown**: Hierarchical text outline
+- **CSV**: Tabular format for spreadsheets
+- **PNG**: Visual snapshot of the graph
 
-```
-├── server.js       # Express backend (Hybrid AI routing, Fallback logic)
-├── public/
-│   ├── index.html  # Graph UI & Custom Role input
-│   ├── app.js      # Frontend logic, Context gathering, Vis.js graph
-│   └── styles.css  # Styling
-├── report.tex      # Research paper/Report (Local only)
-└── package.json
-```
+## Architecture Notes
 
----
+The system uses a **Smart Hybrid AI** approach:
+- **Primary**: Gemini 2.0 Flash (fast, high-quality cloud reasoning)
+- **Fallback**: Ollama/Mistral (local, privacy-preserving, no quota limits)
 
-**Note:** The system is designed to be resilient. If your Gemini API Limit is hit, the backend log will show a switch to Ollama for subsequent requests seamlessly.
+If Gemini quota is exhausted, the backend automatically switches to Ollama to ensure uninterrupted workflows.
