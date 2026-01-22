@@ -27,17 +27,24 @@ This project implements a creative support tool that can:
 
 ## Installation
 
-1. Install dependencies:
+### Prerequisites
+
+- **Node.js 18+**: Download and install from [nodejs.org](https://nodejs.org/)
+- **Ollama** (optional, for local fallback): Download from [ollama.com](https://ollama.com/)
+
+### Setup Steps
+
+1. **Install Node.js dependencies**:
 ```bash
 npm install
 ```
 
-2. Install Ollama (for local AI fallback):
+2. **Install Ollama model** (optional, for local AI fallback):
 ```bash
 ollama pull mistral
 ```
 
-3. Create a `.env` file in the root directory:
+3. **Create a `.env` file** in the root directory:
 ```bash
 # Primary Cloud Model (Recommended)
 GEMINI_API_KEY=your_gemini_api_key_here
