@@ -63,7 +63,7 @@ function setLoading(btn, isLoading) {
 
 // Create initial root node
 const rootId = crypto.randomUUID();
-ideaTree.push({ ...makeNode({ id: rootId, title: 'Starter Idea', content: 'Initial Idea: A smart gardening app.', parentId: null, branchColor: 'blue' }), level: 0 });
+ideaTree.push({ ...makeNode({ id: rootId, title: 'Starter Idea', content: 'Your first idea goes here.', parentId: null, branchColor: 'blue' }), level: 0 });
 
 // ---------------------------------------------------------
 // 1. IMPROVED COLOR PALETTE (Modern UI: Slate, Emerald, Indigo, Rose)
@@ -751,7 +751,7 @@ function newProject() {
     ...makeNode({ 
       id: rootId, 
       title: 'Starter Idea', 
-      content: 'Initial Idea: A smart gardening app.', 
+      content: 'Your first idea goes here.', 
       parentId: null, 
       branchColor: 'blue' 
     }), 
