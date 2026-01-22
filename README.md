@@ -2,8 +2,6 @@
 
 Project for Generative AI @ Leiden University in 2026. It demonstrates spatial AI-assisted ideation using a graph-based interface with specialized AI agents for brainstorming, synthesis, and critical evaluation.
 
-📄 Read the full report here: [IdeaForge Research Paper (PDF)](https://github.com/JonasSaathoff/GenAI/blob/main/report.pdf)
-
 ## Overview
 
 This project implements a creative support tool that can:
