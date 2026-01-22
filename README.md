@@ -2,8 +2,6 @@
 
 A hybrid AI creative support tool that orchestrates multiple AI agents to help you brainstorm, refine, and connect ideas. It creates spatial idea graphs using Inspire, Synthesize, Critique, and Refine agents, leveraging a **Smart Hybrid Architecture** that combines the speed and quality of Cloud AI (Gemini 2.0 Flash) with the reliability and privacy of Local AI (Ollama).
 
-📄 **For detailed documentation, see the local [report.tex](report.tex) file.**
-
 ---
 
 ## Key Features
